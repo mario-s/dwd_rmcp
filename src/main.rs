@@ -1,18 +1,19 @@
-mod dwd_client;
+mod client;
 mod input_params;
 mod shaping;
 mod show_tools;
 mod widgets;
 
+
 use std::sync::Arc;
-use dwd_client::DwdEdrClient;
+use client::DwdEdrClient;
 use input_params::*;
 use rmcp::{
     ErrorData, RoleServer, ServiceExt,
     model::{
         ExtensionCapabilities, Implementation, ListResourcesResult, PaginatedRequestParams,
         ReadResourceRequestParams, ReadResourceResponse, ReadResourceResult, Resource,
-        ResourceContents, ServerCapabilities, ServerConfig,
+        ResourceContents, ServerCapabilities, ServerConfig
     },
     service::RequestContext,
     tool,

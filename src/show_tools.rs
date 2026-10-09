@@ -16,7 +16,7 @@ use serde::Deserialize;
 use serde_json::{Map, Value, json};
 
 use crate::DwdMcpServer;
-use crate::dwd_client::{DEFAULT_COLLECTION, HttpError, is_client_error};
+use crate::client::{DEFAULT_COLLECTION, HttpError, is_client_error};
 use crate::shaping::{self, BBox, Coverage, Series, Step};
 use crate::widgets;
 
