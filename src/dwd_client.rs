@@ -344,22 +344,15 @@ impl DwdEdrClient {
         coords: &str,
         within: f64,
         within_units: &str,
-        instance_id: Option<&str>,
+        instance_id: &str,
         parameter_names: Option<&str>,
         datetime: Option<&str>,
         crs: Option<&str>,
         output_format: &str,
     ) -> anyhow::Result<Value> {
-        let path = match instance_id {
-            Some(instance) => format!(
+        let path = format!(
                 "/collections/{}/instances/{}/radius",
-                collection_id, instance
-            ),
-            None => format!(
-                "/collections/{}/radius",
-                collection_id
-            ),
-        };
+                collection_id, instance_id);
 
         let params = optional_params(vec![
             ("coords", Some(coords.to_string())),
@@ -378,22 +371,15 @@ impl DwdEdrClient {
         &self,
         collection_id: &str,
         coords: &str,
-        instance_id: Option<&str>,
+        instance_id: &str,
         parameter_names: Option<&str>,
         datetime: Option<&str>,
         crs: Option<&str>,
         output_format: &str,
     ) -> anyhow::Result<Value> {
-        let path = match instance_id {
-            Some(instance) => format!(
+        let path = format!(
                 "/collections/{}/instances/{}/area",
-                collection_id, instance
-            ),
-            None => format!(
-                "/collections/{}/area",
-                collection_id
-            ),
-        };
+                collection_id, instance_id);
 
         let params = optional_params(vec![
             ("coords", Some(coords.to_string())),
@@ -410,22 +396,15 @@ impl DwdEdrClient {
         &self,
         collection_id: &str,
         bbox: &str,
-        instance_id: Option<&str>,
+        instance_id: &str,
         parameter_names: Option<&str>,
         datetime: Option<&str>,
         crs: Option<&str>,
         output_format: &str,
     ) -> anyhow::Result<Value> {
-        let path = match instance_id {
-            Some(instance) => format!(
+        let path = format!(
                 "/collections/{}/instances/{}/cube",
-                collection_id, instance
-            ),
-            None => format!(
-                "/collections/{}/cube",
-                collection_id
-            ),
-        };
+                collection_id, instance_id);
 
         let params = optional_params(vec![
             ("bbox", Some(bbox.to_string())),
@@ -443,7 +422,7 @@ impl DwdEdrClient {
         latitude: f64,
         longitude: f64,
         collection_id: &str,
-        instance_id: Option<&str>,
+        instance_id: &str,
         parameters: Option<Vec<String>>,
         datetime_range: Option<&str>,
     ) -> anyhow::Result<Value> {
@@ -472,48 +451,17 @@ impl DwdEdrClient {
             longitude, latitude
         );
 
-        let fetch = |instance: String| {
-            let coords = coords.clone();
-            let param_str = param_str.clone();
-            async move {
-                self.get_position_raw(
-                    collection_id,
-                    &coords,
-                    &instance,
-                    Some(&param_str),
-                    datetime_range,
-                    None,
-                    "CoverageJSON",
-                )
-                .await
-            }
-        };
-
-        let (instance_id, raw_data) = match instance_id {
-            Some(id) => (id.to_string(), fetch(id.to_string()).await?),
-            None => {
-                let latest = self.get_latest_instance_id(collection_id).await?;
-                match fetch(latest.clone()).await {
-                    Ok(raw) => (latest, raw),
-                    // The newest run may be listed before it is queryable: try the next older one.
-                    Err(err) if !is_client_error(&err) => {
-                        let older = self
-                            .instance_candidates(collection_id)
-                            .await
-                            .ok()
-                            .and_then(|c| c.into_iter().find(|i| i.id < latest));
-                        match older {
-                            Some(prev) => {
-                                let raw = fetch(prev.id.clone()).await.map_err(|_| err)?;
-                                (prev.id, raw)
-                            }
-                            None => return Err(err),
-                        }
-                    }
-                    Err(err) => return Err(err),
-                }
-            }
-        };
+        let raw_data = self
+            .get_position_raw(
+                collection_id,
+                &coords,
+                &instance_id,
+                Some(&param_str),
+                datetime_range,
+                None,
+                "CoverageJSON",
+            )
+            .await?;
 
         self.parse_point_forecast(
             raw_data,

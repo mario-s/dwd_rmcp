@@ -515,7 +515,7 @@ impl DwdMcpServer {
         if bbox.area_km2() <= 9_000.0 {
             let raw = self
                 .client
-                .get_cube_raw(collection, &bbox.to_param(), Some(inst), Some(param), Some(datetime), None, "CoverageJSON")
+                .get_cube_raw(collection, &bbox.to_param(), inst, Some(param), Some(datetime), None, "CoverageJSON")
                 .await?;
             return shaping::parse_coverage(&raw);
         }

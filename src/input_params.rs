@@ -29,7 +29,7 @@ pub struct PointForecastParams {
     #[schemars(
         description = "Specific model run instance ID. If omitted, the latest run is used."
     )]
-    pub instance_id: Option<String>,
+    pub instance_id: String,
 
     #[schemars(
         description = "Specific parameter names, e.g. ['T_2M', 'TOT_PREC', 'U_10M', 'V_10M', 'CLCT']"
@@ -100,12 +100,12 @@ pub struct RadiusParams {
     #[schemars(
         description = "Collection ID"
     )]
-    pub collection_id: Option<String>,
+    pub collection_id: String,
 
     #[schemars(
         description = "Specific model run instance ID"
     )]
-    pub instance_id: Option<String>,
+    pub instance_id: String,
 
     #[schemars(
         description = "Comma-separated parameter names"
@@ -138,12 +138,12 @@ pub struct AreaParams {
     #[schemars(
         description = "Collection ID"
     )]
-    pub collection_id: Option<String>,
+    pub collection_id: String,
 
     #[schemars(
         description = "Specific model run instance ID"
     )]
-    pub instance_id: Option<String>,
+    pub instance_id: String,
 
     #[schemars(
         description = "Comma-separated parameter names"
@@ -176,12 +176,12 @@ pub struct CubeParams {
     #[schemars(
         description = "Collection ID"
     )]
-    pub collection_id: Option<String>,
+    pub collection_id: String,
 
     #[schemars(
         description = "Specific model run instance ID"
     )]
-    pub instance_id: Option<String>,
+    pub instance_id: String,
 
     #[schemars(
         description = "Comma-separated parameter names"
