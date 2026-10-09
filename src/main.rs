@@ -339,7 +339,7 @@ impl DwdMcpServer {
 
     #[tool(
         name = "get_conformance",
-        description = "Get general API information and landing page links from the DWD EDR API."
+        description = "List the OGC API conformance classes (supported standards and query types) of the DWD EDR API."
     )]
     pub async fn get_conformance(&self) -> String {
         match self.client.get_conformance().await {
