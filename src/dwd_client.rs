@@ -4,8 +4,7 @@ use serde_json::{json, Value};
 pub const DWD_BASE_URL: &str =
     "https://nwp.opendata-api.dwd.de/v1beta1";
 
-pub const DEFAULT_COLLECTION: &str =
-    "ICON-D2-RUC@single_level";
+// Default collection ID for the EDR API should be: "ICON-D2-RUC@single_level"
 
 #[derive(Clone)]
 pub struct DwdEdrClient {
@@ -96,52 +95,19 @@ impl DwdEdrClient {
             .unwrap_or_else(|| json!([])))
     }
 
-    pub async fn get_latest_instance_id(
-        &self,
-        collection_id: &str,
-    ) -> anyhow::Result<String> {
-        let instances = self.list_instances(collection_id).await?;
-
-        let instances = instances
-            .as_array()
-            .ok_or_else(|| anyhow::anyhow!("Invalid instances response"))?;
-
-        let latest = instances
-            .last()
-            .ok_or_else(|| {
-                anyhow::anyhow!(
-                    "No instances available for collection {}",
-                    collection_id
-                )
-            })?;
-
-        latest
-            .get("id")
-            .and_then(Value::as_str)
-            .map(str::to_string)
-            .ok_or_else(|| anyhow::anyhow!("Instance has no id"))
-    }
-
     pub async fn get_position_raw(
         &self,
         collection_id: &str,
         coords: &str,
-        instance_id: Option<&str>,
+        instance_id: &str,
         parameter_names: Option<&str>,
         datetime: Option<&str>,
         crs: Option<&str>,
         output_format: &str,
     ) -> anyhow::Result<Value> {
-        let path = match instance_id {
-            Some(instance) => format!(
+        let path = format!(
                 "/collections/{}/instances/{}/position",
-                collection_id, instance
-            ),
-            None => format!(
-                "/collections/{}/position",
-                collection_id
-            ),
-        };
+                collection_id, instance_id);
 
         let params = optional_params(vec![
             ("coords", Some(coords.to_string())),
@@ -160,22 +126,15 @@ impl DwdEdrClient {
         coords: &str,
         within: f64,
         within_units: &str,
-        instance_id: Option<&str>,
+        instance_id: &str,
         parameter_names: Option<&str>,
         datetime: Option<&str>,
         crs: Option<&str>,
         output_format: &str,
     ) -> anyhow::Result<Value> {
-        let path = match instance_id {
-            Some(instance) => format!(
+        let path = format!(
                 "/collections/{}/instances/{}/radius",
-                collection_id, instance
-            ),
-            None => format!(
-                "/collections/{}/radius",
-                collection_id
-            ),
-        };
+                collection_id, instance_id);
 
         let params = optional_params(vec![
             ("coords", Some(coords.to_string())),
@@ -194,22 +153,15 @@ impl DwdEdrClient {
         &self,
         collection_id: &str,
         coords: &str,
-        instance_id: Option<&str>,
+        instance_id: &str,
         parameter_names: Option<&str>,
         datetime: Option<&str>,
         crs: Option<&str>,
         output_format: &str,
     ) -> anyhow::Result<Value> {
-        let path = match instance_id {
-            Some(instance) => format!(
+        let path = format!(
                 "/collections/{}/instances/{}/area",
-                collection_id, instance
-            ),
-            None => format!(
-                "/collections/{}/area",
-                collection_id
-            ),
-        };
+                collection_id, instance_id);
 
         let params = optional_params(vec![
             ("coords", Some(coords.to_string())),
@@ -226,22 +178,15 @@ impl DwdEdrClient {
         &self,
         collection_id: &str,
         bbox: &str,
-        instance_id: Option<&str>,
+        instance_id: &str,
         parameter_names: Option<&str>,
         datetime: Option<&str>,
         crs: Option<&str>,
         output_format: &str,
     ) -> anyhow::Result<Value> {
-        let path = match instance_id {
-            Some(instance) => format!(
+        let path = format!(
                 "/collections/{}/instances/{}/cube",
-                collection_id, instance
-            ),
-            None => format!(
-                "/collections/{}/cube",
-                collection_id
-            ),
-        };
+                collection_id, instance_id);
 
         let params = optional_params(vec![
             ("bbox", Some(bbox.to_string())),
@@ -259,18 +204,10 @@ impl DwdEdrClient {
         latitude: f64,
         longitude: f64,
         collection_id: &str,
-        instance_id: Option<&str>,
+        instance_id: &str,
         parameters: Option<Vec<String>>,
         datetime_range: Option<&str>,
     ) -> anyhow::Result<Value> {
-        let instance_id = match instance_id {
-            Some(id) => id.to_string(),
-            None => {
-                self.get_latest_instance_id(collection_id)
-                    .await?
-            }
-        };
-
         let default_params = vec![
             "T_2M",
             "TOT_PREC",
@@ -300,7 +237,7 @@ impl DwdEdrClient {
             .get_position_raw(
                 collection_id,
                 &coords,
-                Some(&instance_id),
+                &instance_id,
                 Some(&param_str),
                 datetime_range,
                 None,

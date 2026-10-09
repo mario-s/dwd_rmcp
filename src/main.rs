@@ -2,7 +2,7 @@ mod dwd_client;
 mod input_params;
 
 use std::sync::Arc;
-use dwd_client::{DwdEdrClient, DEFAULT_COLLECTION};
+use dwd_client::DwdEdrClient;
 use input_params::*;
 use rmcp::{
     ServiceExt,
@@ -93,12 +93,7 @@ impl DwdMcpServer {
         &self,
         Parameters(params): Parameters<CollectionParams>,
     ) -> Result<String, String> {
-        let collection_id = params
-            .collection_id
-            .as_deref()
-            .unwrap_or(DEFAULT_COLLECTION);
-
-        let response = self.client.get_collection(collection_id);
+        let response = self.client.get_collection(&params.collection_id);
         as_json(response.await)
     }
 
@@ -114,12 +109,7 @@ impl DwdMcpServer {
         &self,
         Parameters(params): Parameters<CollectionParams>,
     ) -> Result<String, String> {
-        let collection_id = params
-            .collection_id
-            .as_deref()
-            .unwrap_or(DEFAULT_COLLECTION);
-
-        let response = self.client.list_instances(collection_id);
+        let response = self.client.list_instances(&params.collection_id);
         as_json(response.await)
     }
 
@@ -135,10 +125,7 @@ impl DwdMcpServer {
         &self,
         Parameters(params): Parameters<PointForecastParams>,
     ) -> Result<String, String> {
-        let collection_id = params
-            .collection_id
-            .as_deref()
-            .unwrap_or(DEFAULT_COLLECTION);
+        let collection_id = &params.collection_id;
 
         let response = self
             .client
@@ -146,7 +133,7 @@ impl DwdMcpServer {
                 params.latitude,
                 params.longitude,
                 collection_id,
-                params.instance_id.as_deref(),
+                &params.instance_id,
                 params.parameters,
                 params.datetime_range.as_deref(),
             );
@@ -165,11 +152,7 @@ impl DwdMcpServer {
         &self,
         Parameters(params): Parameters<PositionParams>,
     ) -> Result<String, String> {
-        let collection_id = params
-            .collection_id
-            .as_deref()
-            .unwrap_or(DEFAULT_COLLECTION);
-
+        let collection_id = &params.collection_id;
         let output_format = params
             .output_format
             .as_deref()
@@ -180,7 +163,7 @@ impl DwdMcpServer {
             .get_position_raw(
                 collection_id,
                 &params.coords,
-                params.instance_id.as_deref(),
+                &params.instance_id,
                 params.parameter_names.as_deref(),
                 params.datetime_val.as_deref(),
                 params.crs.as_deref(),
@@ -201,10 +184,7 @@ impl DwdMcpServer {
         &self,
         Parameters(params): Parameters<RadiusParams>,
     ) -> Result<String, String> {
-        let collection_id = params
-            .collection_id
-            .as_deref()
-            .unwrap_or(DEFAULT_COLLECTION);
+        let collection_id = &params.collection_id;
 
         let within_units = params
             .within_units
@@ -223,7 +203,7 @@ impl DwdMcpServer {
                 &params.coords,
                 params.within,
                 within_units,
-                params.instance_id.as_deref(),
+                &params.instance_id,
                 params.parameter_names.as_deref(),
                 params.datetime_val.as_deref(),
                 params.crs.as_deref(),
@@ -244,10 +224,7 @@ impl DwdMcpServer {
         &self,
         Parameters(params): Parameters<AreaParams>,
     ) -> Result<String, String> {
-        let collection_id = params
-            .collection_id
-            .as_deref()
-            .unwrap_or(DEFAULT_COLLECTION);
+        let collection_id = &params.collection_id;
 
         let output_format = params
             .output_format
@@ -259,7 +236,7 @@ impl DwdMcpServer {
             .get_area_raw(
                 collection_id,
                 &params.coords,
-                params.instance_id.as_deref(),
+                &params.instance_id,
                 params.parameter_names.as_deref(),
                 params.datetime_val.as_deref(),
                 params.crs.as_deref(),
@@ -280,10 +257,7 @@ impl DwdMcpServer {
         &self,
         Parameters(params): Parameters<CubeParams>,
     ) -> Result<String, String> {
-        let collection_id = params
-            .collection_id
-            .as_deref()
-            .unwrap_or(DEFAULT_COLLECTION);
+        let collection_id = &params.collection_id;
 
         let output_format = params
             .output_format
@@ -295,7 +269,7 @@ impl DwdMcpServer {
             .get_cube_raw(
                 collection_id,
                 &params.bbox,
-                params.instance_id.as_deref(),
+                &params.instance_id,
                 params.parameter_names.as_deref(),
                 params.datetime_val.as_deref(),
                 params.crs.as_deref(),
