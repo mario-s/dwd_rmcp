@@ -233,7 +233,10 @@ impl DwdEdrClient {
                 return Ok(inst.id.clone());
             }
         }
-        // Nothing verified: fall back to the newest id rather than failing.
+        // Nothing verified: fall back to the newest id rather than failing, and cache it
+        // so the probes are not repeated on every call. Callers retry an older run if
+        // this one turns out not to serve data.
+        cache_put(&self.latest_cache, collection_id, candidates[0].id.clone());
         Ok(candidates[0].id.clone())
     }
 
@@ -451,14 +454,6 @@ impl DwdEdrClient {
         parameters: Option<Vec<String>>,
         datetime_range: Option<&str>,
     ) -> anyhow::Result<Value> {
-        let instance_id = match instance_id {
-            Some(id) => id.to_string(),
-            None => {
-                self.get_latest_instance_id(collection_id)
-                    .await?
-            }
-        };
-
         let default_params = vec![
             "T_2M",
             "TOT_PREC",
@@ -484,17 +479,48 @@ impl DwdEdrClient {
             longitude, latitude
         );
 
-        let raw_data = self
-            .get_position_raw(
-                collection_id,
-                &coords,
-                Some(&instance_id),
-                Some(&param_str),
-                datetime_range,
-                None,
-                "CoverageJSON",
-            )
-            .await?;
+        let fetch = |instance: String| {
+            let coords = coords.clone();
+            let param_str = param_str.clone();
+            async move {
+                self.get_position_raw(
+                    collection_id,
+                    &coords,
+                    Some(&instance),
+                    Some(&param_str),
+                    datetime_range,
+                    None,
+                    "CoverageJSON",
+                )
+                .await
+            }
+        };
+
+        let (instance_id, raw_data) = match instance_id {
+            Some(id) => (id.to_string(), fetch(id.to_string()).await?),
+            None => {
+                let latest = self.get_latest_instance_id(collection_id).await?;
+                match fetch(latest.clone()).await {
+                    Ok(raw) => (latest, raw),
+                    // The newest run may be listed before it is queryable: try the next older one.
+                    Err(err) if !is_client_error(&err) => {
+                        let older = self
+                            .instance_candidates(collection_id)
+                            .await
+                            .ok()
+                            .and_then(|c| c.into_iter().find(|i| i.id < latest));
+                        match older {
+                            Some(prev) => {
+                                let raw = fetch(prev.id.clone()).await.map_err(|_| err)?;
+                                (prev.id, raw)
+                            }
+                            None => return Err(err),
+                        }
+                    }
+                    Err(err) => return Err(err),
+                }
+            }
+        };
 
         self.parse_point_forecast(
             raw_data,

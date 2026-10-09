@@ -182,10 +182,8 @@
     function dayKey(iso) { return dayKeyFmt.format(new Date(iso)); }
 
     function wx(code, iso) {
-      const info = F.ww(code);
-      let name = info.icon;
-      if (name === "sun" && iso) { const h = localHour(iso); if (h < 7 || h >= 19) name = "moon"; }
-      return { name, label: info.label };
+      const info = F.ww(code, iso);
+      return { name: info.icon, label: info.label };
     }
 
     function vals(key) { return state.steps.map((s) => (isNum(s[key]) ? s[key] : null)); }

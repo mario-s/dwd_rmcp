@@ -176,9 +176,18 @@ export function createFixtureBackend({ widgetsDir = join(REPO_ROOT, "widgets"), 
 }
 
 export async function createLiveBackend({ bin = DEFAULT_BIN, verbose = false, fixturesDir = join(REPO_ROOT, "widgets/fixtures") } = {}) {
-  const fixturePath = (f) => join(fixturesDir, `${f}.json`);
   const client = new McpStdioClient(bin, { verbose });
   client.start();
+  try {
+    return await connectLiveBackend(client, fixturesDir);
+  } catch (e) {
+    client.close(); // don't leave the server running when setup fails
+    throw e;
+  }
+}
+
+async function connectLiveBackend(client, fixturesDir) {
+  const fixturePath = (f) => join(fixturesDir, `${f}.json`);
   const init = await client.initialize();
 
   // Tools + their ui resource (tool _meta.ui.resourceUri, legacy alias "ui/resourceUri").

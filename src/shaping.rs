@@ -623,7 +623,12 @@ pub fn parse_bbox(s: &str) -> anyhow::Result<BBox> {
 pub fn bbox_around(lat: f64, lon: f64, radius_km: f64) -> BBox {
     let dlat = radius_km / KM_PER_DEG;
     let dlon = radius_km / (KM_PER_DEG * lat.to_radians().cos().max(0.05));
-    BBox { minx: lon - dlon, miny: lat - dlat, maxx: lon + dlon, maxy: lat + dlat }
+    BBox {
+        minx: (lon - dlon).max(-180.0),
+        miny: (lat - dlat).max(-90.0),
+        maxx: (lon + dlon).min(180.0),
+        maxy: (lat + dlat).min(90.0),
+    }
 }
 
 /// Grid width/height (each 2..=64, W*H ≤ max_cells), roughly square cells in km,
@@ -1058,5 +1063,16 @@ mod tests {
         assert!(parse_bbox("14,52,13,53").is_err());
         let b = bbox_around(52.52, 13.405, 80.0);
         assert!((b.area_km2() - 25600.0).abs() < 200.0);
+    }
+
+    #[test]
+    fn bbox_around_stays_in_bounds() {
+        for (lat, lon) in [(0.0, 180.0), (0.0, -180.0), (90.0, 0.0), (-90.0, 0.0)] {
+            let b = bbox_around(lat, lon, 250.0);
+            assert!(b.minx >= -180.0 && b.maxx <= 180.0 && b.miny >= -90.0 && b.maxy <= 90.0);
+            assert!(b.minx < b.maxx && b.miny < b.maxy);
+            let s = format!("{},{},{},{}", b.minx, b.miny, b.maxx, b.maxy);
+            assert!(parse_bbox(&s).is_ok(), "{s}");
+        }
     }
 }

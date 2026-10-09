@@ -165,15 +165,10 @@
     const esc = F.esc;
     const isNum = (v) => typeof v === "number" && isFinite(v);
     const app = document.getElementById("app");
-    const hourFmt = new Intl.DateTimeFormat("de-DE", { hour: "numeric", hourCycle: "h23", timeZone: "Europe/Berlin" });
-
-    function localHour(iso) { return iso ? Number(hourFmt.format(new Date(iso))) : 12; }
 
     function wxIcon(code, iso, size) {
-      const info = F.ww(code);
-      let name = info.icon;
-      const h = localHour(iso);
-      if (name === "sun" && (h < 7 || h >= 19)) name = "moon";
+      const info = F.ww(code, iso);
+      const name = info.icon;
       if (!isNum(code)) return { html: '<span class="ic-none">' + DWD.icon("thermo", size) + "</span>", label: "" };
       return { html: '<span class="ic-' + name + '">' + DWD.icon(name, size) + "</span>", label: info.label };
     }

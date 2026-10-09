@@ -328,7 +328,7 @@ impl DwdMcpServer {
         };
         let text = format!(
             "{} – {} (Ortszeit): {} °C, {}, Böen {} km/h, Bewölkung {} %, Niederschlag {} mm/h.\n\
-             Gesamter Lauf: {}…{} °C, Σ {} mm, max. Böe {} km/h. Modelllauf {} {}. Das Widget zeigt die Details.",
+             Heute: {}…{} °C, Σ {} mm, max. Böe {} km/h. Modelllauf {} {}. Das Widget zeigt die Details.",
             place(p.location_name.as_deref(), p.latitude, p.longitude),
             local_time(&now.time),
             num(now.t2m_c, 1),
@@ -452,20 +452,36 @@ impl DwdMcpServer {
         }
         let collection = p.collection_id.clone().unwrap_or_else(|| DEFAULT_COLLECTION.to_string());
         let hours = p.hours.unwrap_or(24).clamp(1, 48);
-        // resolve the run once so every location uses the same instance
-        let inst = self.client.get_latest_instance_id(&collection).await?;
-        let results = join_all(p.locations.iter().map(|l| {
-            self.point_series(&collection, Some(&inst), l.latitude, l.longitude, shaping::STEP_PARAMS)
-        }))
-        .await;
+        // Every location uses the same run; if any of them fails on the newest run,
+        // the whole comparison is retried on the next older one.
+        let (inst, all_series) = self
+            .with_instance(&collection, None, |inst| {
+                let collection = collection.clone();
+                let locations = &p.locations;
+                async move {
+                    let results = join_all(locations.iter().map(|l| {
+                        self.point_series(&collection, Some(&inst), l.latitude, l.longitude, shaping::STEP_PARAMS)
+                    }))
+                    .await;
+                    locations
+                        .iter()
+                        .zip(results)
+                        .map(|(l, r)| {
+                            r.map(|(_, s)| s).map_err(|e| {
+                                e.context(format!("location '{}'", place(l.name.as_deref(), l.latitude, l.longitude)))
+                            })
+                        })
+                        .collect::<anyhow::Result<Vec<Series>>>()
+                }
+            })
+            .await?;
 
         let now = Utc::now();
         let mut locs = Vec::new();
         let mut lines = Vec::new();
         let mut reference = None;
-        for (l, r) in p.locations.iter().zip(results) {
+        for (l, series) in p.locations.iter().zip(all_series) {
             let name = place(l.name.as_deref(), l.latitude, l.longitude);
-            let (_, series) = r.map_err(|e| e.context(format!("location '{name}'")))?;
             reference = reference.or(series.reference_time.clone());
             let start = shaping::now_index(&series.times, series.reference_time.as_deref(), now);
             let steps = step_window(&shaping::build_steps(&series), start, hours);

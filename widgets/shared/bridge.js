@@ -68,6 +68,8 @@
   }
 
   window.addEventListener("message", (event) => {
+    // Only the host (our parent frame) may talk to the widget.
+    if (!inIframe || event.source !== window.parent) return;
     const m = event.data;
     if (!m || m.jsonrpc !== "2.0") return;
 
