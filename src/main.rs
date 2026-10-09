@@ -1,10 +1,12 @@
 mod dwd_client;
+mod input_params;
 mod shaping;
 mod show_tools;
 mod widgets;
 
 use std::sync::Arc;
 use dwd_client::{DwdEdrClient, DEFAULT_COLLECTION};
+use input_params::*;
 use rmcp::{
     ErrorData, RoleServer, ServiceExt,
     model::{
@@ -12,7 +14,6 @@ use rmcp::{
         ReadResourceRequestParams, ReadResourceResponse, ReadResourceResult, Resource,
         ResourceContents, ServerCapabilities, ServerConfig,
     },
-    schemars::JsonSchema,
     service::RequestContext,
     tool,
     tool_handler,
@@ -20,210 +21,8 @@ use rmcp::{
     handler::server::{router::tool::ToolRouter, wrapper::Parameters},
     transport::stdio
 };
-use serde::Deserialize;
+use serde_json::Value;
 
-// -----------------------------------------------------------------------------
-// Tool parameter types
-// -----------------------------------------------------------------------------
-
-#[derive(Debug, Deserialize, JsonSchema)]
-struct CollectionParams {
-    #[schemars(
-        description = "Collection ID, e.g. ICON-D2-RUC@single_level"
-    )]
-    collection_id: Option<String>,
-}
-
-#[derive(Debug, Deserialize, JsonSchema)]
-struct PointForecastParams {
-    #[schemars(description = "Latitude in degrees")]
-    latitude: f64,
-
-    #[schemars(description = "Longitude in degrees")]
-    longitude: f64,
-
-    #[schemars(
-        description = "Model collection name, e.g. ICON-D2-RUC@single_level"
-    )]
-    collection_id: Option<String>,
-
-    #[schemars(
-        description = "Specific model run instance ID. If omitted, the latest run is used."
-    )]
-    instance_id: Option<String>,
-
-    #[schemars(
-        description = "Specific parameter names, e.g. ['T_2M', 'TOT_PREC', 'U_10M', 'V_10M', 'CLCT']"
-    )]
-    parameters: Option<Vec<String>>,
-
-    #[schemars(
-        description = "Optional ISO8601 timestamp or interval"
-    )]
-    datetime_range: Option<String>,
-}
-
-#[derive(Debug, Deserialize, JsonSchema)]
-struct PositionParams {
-    #[schemars(
-        description = "WKT Point, e.g. POINT(13.405 52.520)"
-    )]
-    coords: String,
-
-    #[schemars(
-        description = "Collection ID, e.g. ICON-D2-RUC@single_level"
-    )]
-    collection_id: Option<String>,
-
-    #[schemars(
-        description = "Specific model run instance ID"
-    )]
-    instance_id: Option<String>,
-
-    #[schemars(
-        description = "Comma-separated parameter names, e.g. T_2M,TOT_PREC"
-    )]
-    parameter_names: Option<String>,
-
-    #[schemars(
-        description = "ISO8601 timestamp or interval"
-    )]
-    datetime_val: Option<String>,
-
-    #[schemars(
-        description = "Coordinate reference system identifier"
-    )]
-    crs: Option<String>,
-
-    #[schemars(
-        description = "Output format, e.g. CoverageJSON"
-    )]
-    output_format: Option<String>,
-}
-
-#[derive(Debug, Deserialize, JsonSchema)]
-struct RadiusParams {
-    #[schemars(
-        description = "Center point as WKT, e.g. POINT(13.405 52.520)"
-    )]
-    coords: String,
-
-    #[schemars(
-        description = "Radius distance"
-    )]
-    within: f64,
-
-    #[schemars(
-        description = "Radius units, e.g. km, m, mi"
-    )]
-    within_units: Option<String>,
-
-    #[schemars(
-        description = "Collection ID"
-    )]
-    collection_id: Option<String>,
-
-    #[schemars(
-        description = "Specific model run instance ID"
-    )]
-    instance_id: Option<String>,
-
-    #[schemars(
-        description = "Comma-separated parameter names"
-    )]
-    parameter_names: Option<String>,
-
-    #[schemars(
-        description = "ISO8601 timestamp or interval"
-    )]
-    datetime_val: Option<String>,
-
-    #[schemars(
-        description = "Coordinate reference system identifier"
-    )]
-    crs: Option<String>,
-
-    #[schemars(
-        description = "Output format, e.g. CoverageJSON"
-    )]
-    output_format: Option<String>,
-}
-
-#[derive(Debug, Deserialize, JsonSchema)]
-struct AreaParams {
-    #[schemars(
-        description = "WKT Polygon, e.g. POLYGON((13.3 52.4, 13.5 52.4, 13.5 52.6, 13.3 52.6, 13.3 52.4))"
-    )]
-    coords: String,
-
-    #[schemars(
-        description = "Collection ID"
-    )]
-    collection_id: Option<String>,
-
-    #[schemars(
-        description = "Specific model run instance ID"
-    )]
-    instance_id: Option<String>,
-
-    #[schemars(
-        description = "Comma-separated parameter names"
-    )]
-    parameter_names: Option<String>,
-
-    #[schemars(
-        description = "ISO8601 timestamp or interval"
-    )]
-    datetime_val: Option<String>,
-
-    #[schemars(
-        description = "Coordinate reference system identifier"
-    )]
-    crs: Option<String>,
-
-    #[schemars(
-        description = "Output format, e.g. CoverageJSON"
-    )]
-    output_format: Option<String>,
-}
-
-#[derive(Debug, Deserialize, JsonSchema)]
-struct CubeParams {
-    #[schemars(
-        description = "Bounding box minx,miny,maxx,maxy, e.g. 13.3,52.4,13.5,52.6"
-    )]
-    bbox: String,
-
-    #[schemars(
-        description = "Collection ID"
-    )]
-    collection_id: Option<String>,
-
-    #[schemars(
-        description = "Specific model run instance ID"
-    )]
-    instance_id: Option<String>,
-
-    #[schemars(
-        description = "Comma-separated parameter names"
-    )]
-    parameter_names: Option<String>,
-
-    #[schemars(
-        description = "ISO8601 timestamp or interval"
-    )]
-    datetime_val: Option<String>,
-
-    #[schemars(
-        description = "Coordinate reference system identifier"
-    )]
-    crs: Option<String>,
-
-    #[schemars(
-        description = "Output format, e.g. CoverageJSON"
-    )]
-    output_format: Option<String>,
-}
 
 // -----------------------------------------------------------------------------
 // MCP Server
@@ -330,22 +129,18 @@ impl DwdMcpServer {
         name = "get_dwd_api_info",
         description = "Get general API information and landing page links from the DWD EDR API."
     )]
-    async fn get_dwd_api_info(&self) -> String {
-        match self.client.get_landing_page().await {
-            Ok(data) => pretty_json(data),
-            Err(err) => format!("DWD API error: {}", err),
-        }
+    async fn get_dwd_api_info(&self) -> Result<String, String> {
+        let response = self.client.get_landing_page();
+        as_json(response.await)
     }
 
     #[tool(
         name = "get_conformance",
         description = "List the OGC API conformance classes (supported standards and query types) of the DWD EDR API."
     )]
-    pub async fn get_conformance(&self) -> String {
-        match self.client.get_conformance().await {
-            Ok(data) => pretty_json(data),
-            Err(err) => format!("DWD API error: {}", err),
-        }
+    pub async fn get_conformance(&self) -> Result<String, String> {
+        let response = self.client.get_conformance();
+        as_json(response.await)
     }
 
     // -------------------------------------------------------------------------
@@ -356,11 +151,9 @@ impl DwdMcpServer {
         name = "list_model_collections",
         description = "List all available weather model data collections in DWD EDR API, e.g. ICON-D2-RUC@single_level."
     )]
-    pub async fn list_model_collections(&self) -> String {
-        match self.client.list_collections().await {
-            Ok(data) => pretty_json(data),
-            Err(err) => format!("DWD API error: {}", err),
-        }
+    pub async fn list_model_collections(&self) -> Result<String, String> {
+        let response = self.client.list_collections();
+        as_json(response.await)
     }
 
     // -------------------------------------------------------------------------
@@ -374,16 +167,14 @@ impl DwdMcpServer {
     pub async fn describe_model_collection(
         &self,
         Parameters(params): Parameters<CollectionParams>,
-    ) -> String {
+    ) -> Result<String, String> {
         let collection_id = params
             .collection_id
             .as_deref()
             .unwrap_or(DEFAULT_COLLECTION);
 
-        match self.client.get_collection(collection_id).await {
-            Ok(data) => pretty_json(data),
-            Err(err) => format!("DWD API error: {}", err),
-        }
+        let response = self.client.get_collection(collection_id);
+        as_json(response.await)
     }
 
     // -------------------------------------------------------------------------
@@ -397,16 +188,14 @@ impl DwdMcpServer {
     pub async fn list_model_run_instances(
         &self,
         Parameters(params): Parameters<CollectionParams>,
-    ) -> String {
+    ) -> Result<String, String> {
         let collection_id = params
             .collection_id
             .as_deref()
             .unwrap_or(DEFAULT_COLLECTION);
 
-        match self.client.list_instances(collection_id).await {
-            Ok(data) => pretty_json(data),
-            Err(err) => format!("DWD API error: {}", err),
-        }
+        let response = self.client.list_instances(collection_id);
+        as_json(response.await)
     }
 
     // -------------------------------------------------------------------------
@@ -420,13 +209,13 @@ impl DwdMcpServer {
     pub async fn get_point_weather_forecast(
         &self,
         Parameters(params): Parameters<PointForecastParams>,
-    ) -> String {
+    ) -> Result<String, String> {
         let collection_id = params
             .collection_id
             .as_deref()
             .unwrap_or(DEFAULT_COLLECTION);
 
-        match self
+        let response = self
             .client
             .get_point_forecast(
                 params.latitude,
@@ -435,12 +224,8 @@ impl DwdMcpServer {
                 params.instance_id.as_deref(),
                 params.parameters,
                 params.datetime_range.as_deref(),
-            )
-            .await
-        {
-            Ok(data) => pretty_json(data),
-            Err(err) => format!("DWD API error: {}", err),
-        }
+            );
+        as_json(response.await)
     }
 
     // -------------------------------------------------------------------------
@@ -454,7 +239,7 @@ impl DwdMcpServer {
     pub async fn query_edr_position(
         &self,
         Parameters(params): Parameters<PositionParams>,
-    ) -> String {
+    ) -> Result<String, String> {
         let collection_id = params
             .collection_id
             .as_deref()
@@ -465,7 +250,7 @@ impl DwdMcpServer {
             .as_deref()
             .unwrap_or("CoverageJSON");
 
-        match self
+        let response = self
             .client
             .get_position_raw(
                 collection_id,
@@ -475,12 +260,8 @@ impl DwdMcpServer {
                 params.datetime_val.as_deref(),
                 params.crs.as_deref(),
                 output_format,
-            )
-            .await
-        {
-            Ok(data) => pretty_json(data),
-            Err(err) => format!("DWD API error: {}", err),
-        }
+            );
+        as_json(response.await)
     }
 
     // -------------------------------------------------------------------------
@@ -494,7 +275,7 @@ impl DwdMcpServer {
     pub async fn query_edr_radius(
         &self,
         Parameters(params): Parameters<RadiusParams>,
-    ) -> String {
+    ) -> Result<String, String> {
         let collection_id = params
             .collection_id
             .as_deref()
@@ -510,7 +291,7 @@ impl DwdMcpServer {
             .as_deref()
             .unwrap_or("CoverageJSON");
 
-        match self
+        let response = self
             .client
             .get_radius_raw(
                 collection_id,
@@ -522,12 +303,8 @@ impl DwdMcpServer {
                 params.datetime_val.as_deref(),
                 params.crs.as_deref(),
                 output_format,
-            )
-            .await
-        {
-            Ok(data) => pretty_json(data),
-            Err(err) => format!("DWD API error: {}", err),
-        }
+            );
+        as_json(response.await)
     }
 
     // -------------------------------------------------------------------------
@@ -541,7 +318,7 @@ impl DwdMcpServer {
     pub async fn query_edr_area(
         &self,
         Parameters(params): Parameters<AreaParams>,
-    ) -> String {
+    ) -> Result<String, String> {
         let collection_id = params
             .collection_id
             .as_deref()
@@ -552,7 +329,7 @@ impl DwdMcpServer {
             .as_deref()
             .unwrap_or("CoverageJSON");
 
-        match self
+        let response = self
             .client
             .get_area_raw(
                 collection_id,
@@ -562,12 +339,8 @@ impl DwdMcpServer {
                 params.datetime_val.as_deref(),
                 params.crs.as_deref(),
                 output_format,
-            )
-            .await
-        {
-            Ok(data) => pretty_json(data),
-            Err(err) => format!("DWD API error: {}", err),
-        }
+            );
+        as_json(response.await)
     }
 
     // -------------------------------------------------------------------------
@@ -581,7 +354,7 @@ impl DwdMcpServer {
     pub async fn query_edr_cube(
         &self,
         Parameters(params): Parameters<CubeParams>,
-    ) -> String {
+    ) -> Result<String, String> {
         let collection_id = params
             .collection_id
             .as_deref()
@@ -592,7 +365,7 @@ impl DwdMcpServer {
             .as_deref()
             .unwrap_or("CoverageJSON");
 
-        match self
+        let response = self
             .client
             .get_cube_raw(
                 collection_id,
@@ -602,12 +375,8 @@ impl DwdMcpServer {
                 params.datetime_val.as_deref(),
                 params.crs.as_deref(),
                 output_format,
-            )
-            .await
-        {
-            Ok(data) => pretty_json(data),
-            Err(err) => format!("DWD API error: {}", err),
-        }
+            );
+        as_json(response.await)
     }
 }
 
@@ -615,11 +384,11 @@ impl DwdMcpServer {
 // Helper
 // -----------------------------------------------------------------------------
 
-fn pretty_json(value: serde_json::Value) -> String {
-    serde_json::to_string_pretty(&value)
-        .unwrap_or_else(|err| {
-            format!("JSON serialization error: {}", err)
-        })
+fn as_json(result: Result<Value, anyhow::Error>) -> Result<String, String> {
+    let data = result.map_err(|err| format!("DWD API error: {err}"))?;
+
+    serde_json::to_string(&data)
+            .map_err(|err| format!("JSON serialization error: {err}"))
 }
 
 // -----------------------------------------------------------------------------

@@ -152,7 +152,7 @@ to `ICON-D2-RUC@single_level`.
 
 ### Data tools
 
-These return the DWD response as JSON text, either parsed or close to how the API delivers it.
+These return the DWD response as compact JSON text, either parsed or close to how the API delivers it.
 
 | Tool | Input | Returns | EDR endpoint |
 | --- | --- | --- | --- |
@@ -233,8 +233,8 @@ The widget tools first check which parameters a collection offers and request on
 - **Area maps.** Regions up to about 9,000 km² use a single `cube` request. The API limit is 10,000 km², so larger
   regions are sampled with `MULTIPOINT` position queries in chunks of 700 points. The triangular ICON grid is mapped
   onto a regular grid of at most about 48,000 values.
-- **Errors.** HTTP errors are reported with the API's problem+json `detail`. The data tools return them as
-  `DWD API error: …` text.
+- **Errors.** HTTP errors are reported with the API's problem+json `detail`. The data tools return them as tool
+  errors (`isError: true`) with the text `DWD API error: …`.
 
 ### Caching
 
