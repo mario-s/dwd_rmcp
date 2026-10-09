@@ -1,6 +1,7 @@
 mod dwd_client;
 
 use std::sync::Arc;
+use std::fmt::Display;
 use dwd_client::{DwdEdrClient, DEFAULT_COLLECTION};
 use rmcp::{
     ServiceExt,
@@ -255,22 +256,30 @@ impl DwdMcpServer {
         name = "get_dwd_api_info",
         description = "Get general API information and landing page links from the DWD EDR API."
     )]
-    async fn get_dwd_api_info(&self) -> String {
-        match self.client.get_landing_page().await {
-            Ok(data) => pretty_json(data),
-            Err(err) => format!("DWD API error: {}", err),
-        }
+    async fn get_dwd_api_info(&self) -> Result<String, String> {
+        let response = self.client.get_landing_page();
+
+        let data = response
+        .await
+        .map_err(|err| api_err(err))?;
+
+        serde_json::to_string(&data)
+            .map_err(|err| json_err(err))
     }
 
     #[tool(
         name = "get_conformance",
         description = "Get general API information and landing page links from the DWD EDR API."
     )]
-    pub async fn get_conformance(&self) -> String {
-        match self.client.get_conformance().await {
-            Ok(data) => pretty_json(data),
-            Err(err) => format!("DWD API error: {}", err),
-        }
+    pub async fn get_conformance(&self) -> Result<String, String> {
+        let response = self.client.get_conformance();
+
+        let data = response
+        .await
+        .map_err(|err| api_err(err))?;
+
+        serde_json::to_string(&data)
+            .map_err(|err| json_err(err))
     }
 
     // -------------------------------------------------------------------------
@@ -281,11 +290,15 @@ impl DwdMcpServer {
         name = "list_model_collections",
         description = "List all available weather model data collections in DWD EDR API, e.g. ICON-D2-RUC@single_level."
     )]
-    pub async fn list_model_collections(&self) -> String {
-        match self.client.list_collections().await {
-            Ok(data) => pretty_json(data),
-            Err(err) => format!("DWD API error: {}", err),
-        }
+    pub async fn list_model_collections(&self) -> Result<String, String> {
+        let response = self.client.list_collections();
+
+        let data = response
+        .await
+        .map_err(|err| api_err(err))?;
+
+        serde_json::to_string(&data)
+            .map_err(|err| json_err(err))
     }
 
     // -------------------------------------------------------------------------
@@ -545,6 +558,14 @@ fn pretty_json(value: serde_json::Value) -> String {
         .unwrap_or_else(|err| {
             format!("JSON serialization error: {}", err)
         })
+}
+
+fn api_err(err: impl Display) -> String {
+    format!("DWD API error: {err}")
+}
+
+fn json_err(err: impl Display) -> String {
+    format!("JSON serialization error: {err}")
 }
 
 // -----------------------------------------------------------------------------
