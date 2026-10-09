@@ -1,0 +1,329 @@
+{
+  "widget": "model-runs",
+  "location": null,
+  "model": null,
+  "generated_at": "2026-10-09T08:41:12Z",
+  "source": "Deutscher Wetterdienst · EDR API",
+  "collections": [
+    {
+      "id": "ICON-D2-RUC@single_level",
+      "title": "ICON-D2-RUC – Einzelniveau",
+      "description": "Stündlich aktualisiertes Kürzestfrist-Modell (Rapid Update Cycle) des DWD mit 2,2 km Gitterweite für Deutschland und die Nachbarländer. Assimiliert Radardaten und eignet sich besonders für Gewitter, Starkregen und Böen in den nächsten Stunden.",
+      "bbox": [
+        -4.16,
+        43.04,
+        20.54,
+        58.16
+      ],
+      "temporal": {
+        "start": "2026-10-09T08:00:00Z",
+        "end": "2026-10-10T11:00:00Z",
+        "steps": 28
+      },
+      "parameters": [
+        {
+          "name": "ASWDIFD_S",
+          "label": "Diffuse Sonnenstrahlung (Boden)",
+          "unit": "W/m²"
+        },
+        {
+          "name": "ASWDIR_S",
+          "label": "Direkte Sonnenstrahlung (Boden)",
+          "unit": "W/m²"
+        },
+        {
+          "name": "CAPE_ML",
+          "label": "CAPE (Mischungsschicht)",
+          "unit": "J/kg"
+        },
+        {
+          "name": "CAPE_MU",
+          "label": "CAPE (instabilstes Paket)",
+          "unit": "J/kg"
+        },
+        {
+          "name": "CEILING",
+          "label": "Wolkenuntergrenze (Ceiling)",
+          "unit": "m"
+        },
+        {
+          "name": "CIN_MU",
+          "label": "CIN (instabilstes Paket)",
+          "unit": "J/kg"
+        },
+        {
+          "name": "LPI",
+          "label": "Blitzpotenzial-Index",
+          "unit": "J/kg"
+        },
+        {
+          "name": "LPI_MAX",
+          "label": "Blitzpotenzial-Index (Maximum)",
+          "unit": "J/kg"
+        },
+        {
+          "name": "CLCM",
+          "label": "Mittelhohe Bewölkung",
+          "unit": "%"
+        },
+        {
+          "name": "CIN_ML",
+          "label": "CIN (Mischungsschicht)",
+          "unit": "J/kg"
+        },
+        {
+          "name": "CLCL",
+          "label": "Tiefe Bewölkung",
+          "unit": "%"
+        },
+        {
+          "name": "CLCT",
+          "label": "Gesamtbewölkung",
+          "unit": "%"
+        },
+        {
+          "name": "GRAU_GSP",
+          "label": "Graupel (skalig)",
+          "unit": "kg/m²"
+        },
+        {
+          "name": "HAIL_GSP",
+          "label": "Hagel (skalig)",
+          "unit": "kg/m²"
+        },
+        {
+          "name": "HSURF",
+          "label": "Geländehöhe",
+          "unit": "m"
+        },
+        {
+          "name": "PMSL",
+          "label": "Luftdruck auf Meeresniveau",
+          "unit": "Pa"
+        },
+        {
+          "name": "LAI",
+          "label": "Blattflächenindex",
+          "unit": "m²/m²"
+        },
+        {
+          "name": "SNOW_GSP",
+          "label": "Schneefall (skalig)",
+          "unit": "kg/m²"
+        },
+        {
+          "name": "TD_2M",
+          "label": "Taupunkt 2 m",
+          "unit": "K"
+        },
+        {
+          "name": "TOT_PREC",
+          "label": "Gesamtniederschlag (akkumuliert)",
+          "unit": "kg/m²"
+        },
+        {
+          "name": "RAIN_GSP",
+          "label": "Regen (skalig)",
+          "unit": "kg/m²"
+        },
+        {
+          "name": "T_2M",
+          "label": "Temperatur 2 m",
+          "unit": "K"
+        },
+        {
+          "name": "U_10M",
+          "label": "Wind 10 m (Ost-West-Komponente)",
+          "unit": "m/s"
+        },
+        {
+          "name": "VMAX_10M",
+          "label": "Maximale Windböe 10 m",
+          "unit": "m/s"
+        },
+        {
+          "name": "V_10M",
+          "label": "Wind 10 m (Nord-Süd-Komponente)",
+          "unit": "m/s"
+        },
+        {
+          "name": "WW",
+          "label": "Signifikantes Wetter (WMO-Code)",
+          "unit": "–"
+        }
+      ],
+      "query_types": [
+        "position",
+        "radius",
+        "area",
+        "cube"
+      ],
+      "latest_instance": "2026-10-09T08:00:00Z",
+      "instances": [
+        "2026-10-09T08:00:00Z",
+        "2026-10-09T07:00:00Z",
+        "2026-10-09T06:00:00Z",
+        "2026-10-09T05:00:00Z",
+        "2026-10-09T04:00:00Z",
+        "2026-10-09T03:00:00Z",
+        "2026-10-09T02:00:00Z",
+        "2026-10-09T01:00:00Z",
+        "2026-10-09T00:00:00Z",
+        "2026-10-08T23:00:00Z",
+        "2026-10-08T22:00:00Z",
+        "2026-10-08T21:00:00Z",
+        "2026-10-08T20:00:00Z",
+        "2026-10-08T19:00:00Z",
+        "2026-10-08T18:00:00Z",
+        "2026-10-08T17:00:00Z",
+        "2026-10-08T16:00:00Z",
+        "2026-10-08T15:00:00Z",
+        "2026-10-08T14:00:00Z",
+        "2026-10-08T13:00:00Z",
+        "2026-10-08T12:00:00Z",
+        "2026-10-08T11:00:00Z",
+        "2026-10-08T10:00:00Z",
+        "2026-10-08T09:00:00Z"
+      ]
+    },
+    {
+      "id": "ICON-D2-RUC-EPS@single_level",
+      "title": "ICON-D2-RUC-EPS – Ensemble, Einzelniveau",
+      "description": "Ensemble-Variante des ICON-D2-RUC mit 20 Membern. Liefert Wahrscheinlichkeiten und Unsicherheitsbereiche für konvektive Ereignisse auf demselben 2,2-km-Gitter.",
+      "bbox": [
+        -4.16,
+        43.04,
+        20.54,
+        58.16
+      ],
+      "temporal": {
+        "start": "2026-10-09T08:00:00Z",
+        "end": "2026-10-10T11:00:00Z",
+        "steps": 28
+      },
+      "parameters": [
+        {
+          "name": "ASWDIFD_S",
+          "label": "Diffuse Sonnenstrahlung (Boden)",
+          "unit": "W/m²"
+        },
+        {
+          "name": "ASWDIR_S",
+          "label": "Direkte Sonnenstrahlung (Boden)",
+          "unit": "W/m²"
+        },
+        {
+          "name": "CAPE_ML",
+          "label": "CAPE (Mischungsschicht)",
+          "unit": "J/kg"
+        },
+        {
+          "name": "CAPE_MU",
+          "label": "CAPE (instabilstes Paket)",
+          "unit": "J/kg"
+        },
+        {
+          "name": "CIN_MU",
+          "label": "CIN (instabilstes Paket)",
+          "unit": "J/kg"
+        },
+        {
+          "name": "LPI",
+          "label": "Blitzpotenzial-Index",
+          "unit": "J/kg"
+        },
+        {
+          "name": "LPI_MAX",
+          "label": "Blitzpotenzial-Index (Maximum)",
+          "unit": "J/kg"
+        },
+        {
+          "name": "CLCM",
+          "label": "Mittelhohe Bewölkung",
+          "unit": "%"
+        },
+        {
+          "name": "CLCL",
+          "label": "Tiefe Bewölkung",
+          "unit": "%"
+        },
+        {
+          "name": "CLCT",
+          "label": "Gesamtbewölkung",
+          "unit": "%"
+        },
+        {
+          "name": "HAIL_GSP",
+          "label": "Hagel (skalig)",
+          "unit": "kg/m²"
+        },
+        {
+          "name": "PMSL",
+          "label": "Luftdruck auf Meeresniveau",
+          "unit": "Pa"
+        },
+        {
+          "name": "TD_2M",
+          "label": "Taupunkt 2 m",
+          "unit": "K"
+        },
+        {
+          "name": "TOT_PREC",
+          "label": "Gesamtniederschlag (akkumuliert)",
+          "unit": "kg/m²"
+        },
+        {
+          "name": "RAIN_GSP",
+          "label": "Regen (skalig)",
+          "unit": "kg/m²"
+        },
+        {
+          "name": "T_2M",
+          "label": "Temperatur 2 m",
+          "unit": "K"
+        },
+        {
+          "name": "U_10M",
+          "label": "Wind 10 m (Ost-West-Komponente)",
+          "unit": "m/s"
+        },
+        {
+          "name": "VMAX_10M",
+          "label": "Maximale Windböe 10 m",
+          "unit": "m/s"
+        },
+        {
+          "name": "V_10M",
+          "label": "Wind 10 m (Nord-Süd-Komponente)",
+          "unit": "m/s"
+        },
+        {
+          "name": "WW",
+          "label": "Signifikantes Wetter (WMO-Code)",
+          "unit": "–"
+        }
+      ],
+      "query_types": [
+        "position",
+        "radius",
+        "area",
+        "cube"
+      ],
+      "latest_instance": "2026-10-09T07:00:00Z",
+      "instances": [
+        "2026-10-09T07:00:00Z",
+        "2026-10-09T06:00:00Z",
+        "2026-10-09T05:00:00Z",
+        "2026-10-09T04:00:00Z",
+        "2026-10-09T03:00:00Z",
+        "2026-10-09T02:00:00Z",
+        "2026-10-09T01:00:00Z",
+        "2026-10-09T00:00:00Z",
+        "2026-10-08T23:00:00Z",
+        "2026-10-08T22:00:00Z",
+        "2026-10-08T21:00:00Z",
+        "2026-10-08T20:00:00Z"
+      ]
+    }
+  ]
+}

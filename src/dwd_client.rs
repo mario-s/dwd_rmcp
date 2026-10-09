@@ -1,3 +1,7 @@
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
+
 use reqwest::Client;
 use serde_json::{json, Value};
 
@@ -7,10 +11,80 @@ pub const DWD_BASE_URL: &str =
 pub const DEFAULT_COLLECTION: &str =
     "ICON-D2-RUC@single_level";
 
+/// Non-success HTTP response from the DWD API.
+#[derive(Debug)]
+pub struct HttpError {
+    pub status: u16,
+    pub body: String,
+}
+
+impl HttpError {
+    /// Human readable message (uses the problem+json `detail` if present).
+    pub fn detail(&self) -> String {
+        serde_json::from_str::<Value>(&self.body)
+            .ok()
+            .and_then(|v| {
+                v.get("detail")
+                    .or_else(|| v.get("title"))
+                    .and_then(Value::as_str)
+                    .map(String::from)
+            })
+            .unwrap_or_else(|| self.body.chars().take(300).collect())
+    }
+}
+
+impl std::fmt::Display for HttpError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "DWD API returned HTTP {}\nServer response: {}",
+            self.status, self.body
+        )
+    }
+}
+
+impl std::error::Error for HttpError {}
+
+/// True if the error is a 4xx response other than 404 (i.e. a bad request
+/// that will fail the same way for any model run).
+pub fn is_client_error(err: &anyhow::Error) -> bool {
+    err.downcast_ref::<HttpError>()
+        .is_some_and(|e| (400..500).contains(&e.status) && e.status != 404)
+}
+
+/// One forecast run (instance) of a collection.
+#[derive(Debug, Clone)]
+pub struct InstanceInfo {
+    pub id: String,
+    pub end: Option<String>,
+}
+
+const INSTANCE_TTL: Duration = Duration::from_secs(120);
+const COLLECTION_TTL: Duration = Duration::from_secs(600);
+
+type Cache<T> = Arc<Mutex<HashMap<String, (Instant, T)>>>;
+
+fn cache_get<T: Clone>(cache: &Cache<T>, key: &str, ttl: Duration) -> Option<T> {
+    let guard = cache.lock().ok()?;
+    guard
+        .get(key)
+        .filter(|(at, _)| at.elapsed() < ttl)
+        .map(|(_, v)| v.clone())
+}
+
+fn cache_put<T>(cache: &Cache<T>, key: &str, value: T) {
+    if let Ok(mut guard) = cache.lock() {
+        guard.insert(key.to_string(), (Instant::now(), value));
+    }
+}
+
 #[derive(Clone)]
 pub struct DwdEdrClient {
     client: Client,
     base_url: String,
+    instances_cache: Cache<Vec<InstanceInfo>>,
+    latest_cache: Cache<String>,
+    collection_cache: Cache<Value>,
 }
 
 impl DwdEdrClient {
@@ -21,6 +95,9 @@ impl DwdEdrClient {
                 .build()
                 .expect("Failed to create HTTP client"),
             base_url: DWD_BASE_URL.trim_end_matches('/').to_string(),
+            instances_cache: Arc::default(),
+            latest_cache: Arc::default(),
+            collection_cache: Arc::default(),
         }
     }
 
@@ -43,11 +120,11 @@ impl DwdEdrClient {
         let body = response.text().await?;
 
         if !status.is_success() {
-            anyhow::bail!(
-                "DWD API returned HTTP {}\nServer response: {}",
-                status,
-                body
-            );
+            return Err(HttpError {
+                status: status.as_u16(),
+                body,
+            }
+            .into());
         }
 
         Ok(serde_json::from_str(&body)?)
@@ -96,30 +173,141 @@ impl DwdEdrClient {
             .unwrap_or_else(|| json!([])))
     }
 
+    /// All instances of a collection, newest first (the API list is not
+    /// guaranteed to be chronological; ISO-8601 ids sort lexicographically).
+    pub async fn instance_candidates(
+        &self,
+        collection_id: &str,
+    ) -> anyhow::Result<Vec<InstanceInfo>> {
+        if let Some(v) = cache_get(&self.instances_cache, collection_id, INSTANCE_TTL) {
+            return Ok(v);
+        }
+        let instances = self.list_instances(collection_id).await?;
+        let mut list: Vec<InstanceInfo> = instances
+            .as_array()
+            .ok_or_else(|| anyhow::anyhow!("Invalid instances response"))?
+            .iter()
+            .filter_map(|i| {
+                let id = i.get("id")?.as_str()?.to_string();
+                let interval = i.pointer("/extent/temporal/interval/0");
+                let at = |k: usize| {
+                    interval
+                        .and_then(|iv| iv.get(k))
+                        .and_then(Value::as_str)
+                        .map(String::from)
+                };
+                Some(InstanceInfo { id, end: at(1) })
+            })
+            .collect();
+        list.sort_by(|a, b| b.id.cmp(&a.id));
+        list.dedup_by(|a, b| a.id == b.id);
+        if list.is_empty() {
+            anyhow::bail!("No instances available for collection {}", collection_id);
+        }
+        cache_put(&self.instances_cache, collection_id, list.clone());
+        Ok(list)
+    }
+
+    /// Newest instance that actually serves data. Probes a single point/param
+    /// of the newest runs and falls back to older ones if a run is not (yet)
+    /// queryable. Cached for two minutes.
     pub async fn get_latest_instance_id(
         &self,
         collection_id: &str,
     ) -> anyhow::Result<String> {
-        let instances = self.list_instances(collection_id).await?;
+        if let Some(v) = cache_get(&self.latest_cache, collection_id, INSTANCE_TTL) {
+            return Ok(v);
+        }
+        let candidates = self.instance_candidates(collection_id).await?;
+        let probe_param = match self.collection_param_names(collection_id).await {
+            Ok(names) if names.iter().any(|n| n == "T_2M") => "T_2M".to_string(),
+            Ok(names) if !names.is_empty() => names[0].clone(),
+            _ => "T_2M".to_string(),
+        };
+        for inst in candidates.iter().take(4) {
+            if self
+                .instance_has_data(collection_id, &inst.id, &probe_param)
+                .await
+            {
+                cache_put(&self.latest_cache, collection_id, inst.id.clone());
+                return Ok(inst.id.clone());
+            }
+        }
+        // Nothing verified: fall back to the newest id rather than failing.
+        Ok(candidates[0].id.clone())
+    }
 
-        let instances = instances
-            .as_array()
-            .ok_or_else(|| anyhow::anyhow!("Invalid instances response"))?;
+    async fn instance_has_data(&self, collection_id: &str, instance_id: &str, param: &str) -> bool {
+        let res = self
+            .get_position_raw(
+                collection_id,
+                "POINT(10.45 51.16)",
+                Some(instance_id),
+                Some(param),
+                None,
+                None,
+                "CoverageJSON",
+            )
+            .await;
+        match res {
+            Ok(v) => v
+                .pointer("/coverages/0/ranges")
+                .and_then(Value::as_object)
+                .and_then(|r| r.get(param))
+                .and_then(|r| r.get("values"))
+                .and_then(Value::as_array)
+                .is_some_and(|vals| vals.iter().any(|x| x.is_number())),
+            Err(_) => false,
+        }
+    }
 
-        let latest = instances
-            .last()
-            .ok_or_else(|| {
-                anyhow::anyhow!(
-                    "No instances available for collection {}",
-                    collection_id
-                )
-            })?;
+    /// Collection metadata (cached).
+    pub async fn collection_cached(&self, collection_id: &str) -> anyhow::Result<Value> {
+        if let Some(v) = cache_get(&self.collection_cache, collection_id, COLLECTION_TTL) {
+            return Ok(v);
+        }
+        let v = self.get_collection(collection_id).await?;
+        cache_put(&self.collection_cache, collection_id, v.clone());
+        Ok(v)
+    }
 
-        latest
-            .get("id")
-            .and_then(Value::as_str)
-            .map(str::to_string)
-            .ok_or_else(|| anyhow::anyhow!("Instance has no id"))
+    /// Parameter names offered by a collection.
+    pub async fn collection_param_names(&self, collection_id: &str) -> anyhow::Result<Vec<String>> {
+        let v = self.collection_cached(collection_id).await?;
+        Ok(v.get("parameter_names")
+            .and_then(Value::as_object)
+            .map(|o| o.keys().cloned().collect())
+            .unwrap_or_default())
+    }
+
+    /// Position query for several points at once (WKT MULTIPOINT). Note: the
+    /// API de-duplicates cells and does not preserve the point order.
+    pub async fn get_multipoint_raw(
+        &self,
+        collection_id: &str,
+        instance_id: &str,
+        points: &[(f64, f64)],
+        parameter_names: &str,
+        datetime: Option<&str>,
+    ) -> anyhow::Result<Value> {
+        let coords = format!(
+            "MULTIPOINT({})",
+            points
+                .iter()
+                .map(|(x, y)| format!("({x:.4} {y:.4})"))
+                .collect::<Vec<_>>()
+                .join(",")
+        );
+        self.get_position_raw(
+            collection_id,
+            &coords,
+            Some(instance_id),
+            Some(parameter_names),
+            datetime,
+            None,
+            "CoverageJSON",
+        )
+        .await
     }
 
     pub async fn get_position_raw(

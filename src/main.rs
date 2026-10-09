@@ -1,10 +1,19 @@
 mod dwd_client;
+mod shaping;
+mod show_tools;
+mod widgets;
 
 use std::sync::Arc;
 use dwd_client::{DwdEdrClient, DEFAULT_COLLECTION};
 use rmcp::{
-    ServiceExt,
+    ErrorData, RoleServer, ServiceExt,
+    model::{
+        ExtensionCapabilities, Implementation, ListResourcesResult, PaginatedRequestParams,
+        ReadResourceRequestParams, ReadResourceResponse, ReadResourceResult, Resource,
+        ResourceContents, ServerCapabilities, ServerConfig,
+    },
     schemars::JsonSchema,
+    service::RequestContext,
     tool,
     tool_handler,
     tool_router,
@@ -226,8 +235,74 @@ struct DwdMcpServer {
     tool_router: ToolRouter<Self>,
 }
 
+const INSTRUCTIONS: &str = "DWD (Deutscher Wetterdienst) ICON-D2-RUC weather model data for Germany and neighbouring countries \
+(hourly runs, about 27 h ahead, ~2.2 km). When the user wants to SEE weather, prefer the show_* tools, which render \
+interactive widgets: show_current_weather (now), show_forecast_chart (hourly meteogram), show_wind_profile, \
+show_thunderstorm_risk, show_location_compare (2-6 places), show_area_map (gridded map with time slider) and \
+show_model_runs (data sources). They need latitude/longitude; geocode place names yourself. Use the get_*/query_* \
+tools only for raw data questions. Widgets already display the numbers, so keep the follow-up text short.";
+
 #[tool_handler(router = self.tool_router)]
-impl rmcp::ServerHandler for DwdMcpServer {}
+impl rmcp::ServerHandler for DwdMcpServer {
+    fn get_info(&self) -> ServerConfig {
+        let mut extensions = ExtensionCapabilities::new();
+        if let Ok(ui) = serde_json::from_value(serde_json::json!({
+            "mimeTypes": [widgets::MIME_TYPE]
+        })) {
+            extensions.insert("io.modelcontextprotocol/ui".to_string(), ui);
+        }
+        ServerConfig::new(
+            ServerCapabilities::builder()
+                .enable_tools()
+                .enable_resources()
+                .enable_extensions_with(extensions)
+                .build(),
+        )
+        .with_server_info(
+            Implementation::new("dwd-rmcp", env!("CARGO_PKG_VERSION"))
+                .with_title("DWD Wetter (ICON-D2)"),
+        )
+        .with_instructions(INSTRUCTIONS)
+    }
+
+    async fn list_resources(
+        &self,
+        _request: Option<PaginatedRequestParams>,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<ListResourcesResult, ErrorData> {
+        let resources = widgets::WIDGETS
+            .iter()
+            .map(|w| {
+                Resource::new(w.uri(), w.name)
+                    .with_title(w.title)
+                    .with_description(w.description)
+                    .with_mime_type(widgets::MIME_TYPE)
+                    .with_meta(widgets::resource_meta())
+            })
+            .collect();
+        Ok(ListResourcesResult::with_all_items(resources))
+    }
+
+    async fn read_resource(
+        &self,
+        request: ReadResourceRequestParams,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<ReadResourceResponse, ErrorData> {
+        let widget = widgets::find_by_uri(&request.uri).ok_or_else(|| {
+            ErrorData::resource_not_found(
+                format!("unknown resource {}", request.uri),
+                None,
+            )
+        })?;
+        let contents = ResourceContents::TextResourceContents {
+            uri: widget.uri(),
+            mime_type: Some(widgets::MIME_TYPE.to_string()),
+            text: widget.render(),
+            meta: Some(widgets::resource_meta()),
+        };
+        Ok(ReadResourceResult::new(vec![contents]).into())
+    }
+}
 
 impl Default for DwdMcpServer {
     fn default() -> Self {
@@ -242,7 +317,7 @@ impl Default for DwdMcpServer {
 impl DwdMcpServer {
     pub fn new() -> Self {
         Self {
-            tool_router: Self::tool_router(),
+            tool_router: Self::tool_router() + Self::show_router(),
             client: Arc::new(DwdEdrClient::new()),
         }
     }

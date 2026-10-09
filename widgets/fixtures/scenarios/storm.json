@@ -1,0 +1,283 @@
+{
+  "widget": "storm",
+  "location": {
+    "name": "Berlin",
+    "lat": 52.52,
+    "lon": 13.405
+  },
+  "model": {
+    "collection_id": "ICON-D2-RUC@single_level",
+    "instance_id": "2026-10-09T08:00:00Z",
+    "reference_time": "2026-10-09T08:00:00Z"
+  },
+  "generated_at": "2026-10-09T08:41:12Z",
+  "source": "Deutscher Wetterdienst · ICON-D2-RUC (EDR API)",
+  "steps": [
+    {
+      "time": "2026-10-09T08:00:00Z",
+      "cape_jkg": 140,
+      "lpi": 0,
+      "hail_mm": 0,
+      "gust_kmh": 22,
+      "precip_mm": 0,
+      "ww": 1,
+      "risk": 0
+    },
+    {
+      "time": "2026-10-09T09:00:00Z",
+      "cape_jkg": 230,
+      "lpi": 0,
+      "hail_mm": 0,
+      "gust_kmh": 25,
+      "precip_mm": 0,
+      "ww": 2,
+      "risk": 0
+    },
+    {
+      "time": "2026-10-09T10:00:00Z",
+      "cape_jkg": 420,
+      "lpi": 0,
+      "hail_mm": 0,
+      "gust_kmh": 31,
+      "precip_mm": 0,
+      "ww": 2,
+      "risk": 1
+    },
+    {
+      "time": "2026-10-09T11:00:00Z",
+      "cape_jkg": 780,
+      "lpi": 0.4,
+      "hail_mm": 0,
+      "gust_kmh": 38,
+      "precip_mm": 0.1,
+      "ww": 3,
+      "risk": 1
+    },
+    {
+      "time": "2026-10-09T12:00:00Z",
+      "cape_jkg": 1250,
+      "lpi": 1.2,
+      "hail_mm": 0,
+      "gust_kmh": 47,
+      "precip_mm": 0.6,
+      "ww": 80,
+      "risk": 2
+    },
+    {
+      "time": "2026-10-09T13:00:00Z",
+      "cape_jkg": 1650,
+      "lpi": 2.8,
+      "hail_mm": 0.4,
+      "gust_kmh": 58,
+      "precip_mm": 2.4,
+      "ww": 81,
+      "risk": 2
+    },
+    {
+      "time": "2026-10-09T14:00:00Z",
+      "cape_jkg": 1450,
+      "lpi": 5.1,
+      "hail_mm": 3.1,
+      "gust_kmh": 82,
+      "precip_mm": 14.8,
+      "ww": 95,
+      "risk": 3
+    },
+    {
+      "time": "2026-10-09T15:00:00Z",
+      "cape_jkg": 900,
+      "lpi": 3.2,
+      "hail_mm": 1.2,
+      "gust_kmh": 72,
+      "precip_mm": 8.2,
+      "ww": 96,
+      "risk": 3
+    },
+    {
+      "time": "2026-10-09T16:00:00Z",
+      "cape_jkg": 520,
+      "lpi": 0.8,
+      "hail_mm": 0,
+      "gust_kmh": 49,
+      "precip_mm": 1.9,
+      "ww": 61,
+      "risk": 1
+    },
+    {
+      "time": "2026-10-09T17:00:00Z",
+      "cape_jkg": 310,
+      "lpi": 0,
+      "hail_mm": 0,
+      "gust_kmh": 36,
+      "precip_mm": 0.3,
+      "ww": 3,
+      "risk": 1
+    },
+    {
+      "time": "2026-10-09T18:00:00Z",
+      "cape_jkg": 180,
+      "lpi": 0,
+      "hail_mm": 0,
+      "gust_kmh": 28,
+      "precip_mm": 0,
+      "ww": 2,
+      "risk": 0
+    },
+    {
+      "time": "2026-10-09T19:00:00Z",
+      "cape_jkg": 90,
+      "lpi": 0,
+      "hail_mm": 0,
+      "gust_kmh": 24,
+      "precip_mm": 0,
+      "ww": 2,
+      "risk": 0
+    },
+    {
+      "time": "2026-10-09T20:00:00Z",
+      "cape_jkg": 40,
+      "lpi": 0,
+      "hail_mm": 0,
+      "gust_kmh": 21,
+      "precip_mm": 0,
+      "ww": 1,
+      "risk": 0
+    },
+    {
+      "time": "2026-10-09T21:00:00Z",
+      "cape_jkg": 20,
+      "lpi": 0,
+      "hail_mm": 0,
+      "gust_kmh": 19,
+      "precip_mm": 0,
+      "ww": 0,
+      "risk": 0
+    },
+    {
+      "time": "2026-10-09T22:00:00Z",
+      "cape_jkg": 10,
+      "lpi": 0,
+      "hail_mm": 0,
+      "gust_kmh": 18,
+      "precip_mm": 0,
+      "ww": 0,
+      "risk": 0
+    },
+    {
+      "time": "2026-10-09T23:00:00Z",
+      "cape_jkg": 5,
+      "lpi": 0,
+      "hail_mm": 0,
+      "gust_kmh": 17,
+      "precip_mm": 0,
+      "ww": 0,
+      "risk": 0
+    },
+    {
+      "time": "2026-10-10T00:00:00Z",
+      "cape_jkg": 0,
+      "lpi": 0,
+      "hail_mm": 0,
+      "gust_kmh": 16,
+      "precip_mm": 0,
+      "ww": 0,
+      "risk": 0
+    },
+    {
+      "time": "2026-10-10T01:00:00Z",
+      "cape_jkg": 0,
+      "lpi": 0,
+      "hail_mm": 0,
+      "gust_kmh": 16,
+      "precip_mm": 0,
+      "ww": 0,
+      "risk": 0
+    },
+    {
+      "time": "2026-10-10T02:00:00Z",
+      "cape_jkg": 0,
+      "lpi": 0,
+      "hail_mm": 0,
+      "gust_kmh": 17,
+      "precip_mm": 0,
+      "ww": 0,
+      "risk": 0
+    },
+    {
+      "time": "2026-10-10T03:00:00Z",
+      "cape_jkg": 10,
+      "lpi": 0,
+      "hail_mm": 0,
+      "gust_kmh": 18,
+      "precip_mm": 0,
+      "ww": 1,
+      "risk": 0
+    },
+    {
+      "time": "2026-10-10T04:00:00Z",
+      "cape_jkg": null,
+      "lpi": 0,
+      "hail_mm": 0,
+      "gust_kmh": 20,
+      "precip_mm": 0,
+      "ww": 2,
+      "risk": 0
+    },
+    {
+      "time": "2026-10-10T05:00:00Z",
+      "cape_jkg": 60,
+      "lpi": 0,
+      "hail_mm": 0,
+      "gust_kmh": 22,
+      "precip_mm": 0,
+      "ww": 2,
+      "risk": 0
+    },
+    {
+      "time": "2026-10-10T06:00:00Z",
+      "cape_jkg": 90,
+      "lpi": 0,
+      "hail_mm": 0,
+      "gust_kmh": 24,
+      "precip_mm": 0,
+      "ww": 2,
+      "risk": 0
+    },
+    {
+      "time": "2026-10-10T07:00:00Z",
+      "cape_jkg": 120,
+      "lpi": 0,
+      "hail_mm": 0,
+      "gust_kmh": 25,
+      "precip_mm": 0,
+      "ww": 3,
+      "risk": 0
+    }
+  ],
+  "summary": {
+    "max_risk": 3,
+    "max_risk_time": "2026-10-09T14:00:00Z",
+    "max_cape_jkg": 1650,
+    "max_lpi": 5.1,
+    "max_gust_kmh": 82,
+    "thunder_hours": 6
+  },
+  "levels": [
+    {
+      "level": 0,
+      "label": "Keine Gefahr"
+    },
+    {
+      "level": 1,
+      "label": "Gering"
+    },
+    {
+      "level": 2,
+      "label": "Erhöht"
+    },
+    {
+      "level": 3,
+      "label": "Hoch"
+    }
+  ]
+}

@@ -1,0 +1,171 @@
+/* DWD widget theme — injected into every widget at the DWD:SHARED marker. */
+:root {
+  --dwd-blue: #2b55b3;
+  --dwd-blue-strong: #1f3f8a;
+  --dwd-blue-soft: #e8eefb;
+  --dwd-lime: #8fd14f;
+  --dwd-lime-soft: #eaf7dc;
+
+  --bg: #f4f6fb;
+  --card: #ffffff;
+  --card-2: #f7f8fc;
+  --ink: #14213d;
+  --ink-2: #4a5671;
+  --ink-3: #8590a8;
+  --line: #e3e7f0;
+  --accent: var(--dwd-blue);
+  --accent-soft: var(--dwd-blue-soft);
+  --ok: #4f9d2a;
+
+  /* data colors */
+  --temp: #e8743b;
+  --temp-soft: rgba(232, 116, 59, 0.14);
+  --dew: #8a63d2;
+  --rain: #2f7fd6;
+  --rain-soft: rgba(47, 127, 214, 0.18);
+  --cloud: #9aa5ba;
+  --wind: #1aa39a;
+  --gust: #0d6e68;
+  --sun: #f2a900;
+  --storm: #7c5cd6;
+  --lime-ink: #3f7d14;
+  --now: var(--dwd-lime);
+
+  /* DWD warning levels */
+  --warn-0: #d9dee8;
+  --warn-1: #ffe14d;
+  --warn-2: #ff9a1f;
+  --warn-3: #e5352b;
+  --warn-4: #9b1c6b;
+
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow: 0 1px 2px rgba(20, 33, 61, 0.06), 0 6px 20px rgba(20, 33, 61, 0.06);
+  --font: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0f141f;
+  --card: #171e2d;
+  --card-2: #1d2537;
+  --ink: #eef2fa;
+  --ink-2: #b4bdd0;
+  --ink-3: #7c879f;
+  --line: #2a3448;
+  --accent: #7ea2ff;
+  --accent-soft: rgba(126, 162, 255, 0.14);
+  --dwd-blue-soft: rgba(126, 162, 255, 0.14);
+  --dwd-lime-soft: rgba(143, 209, 79, 0.14);
+  --temp: #ff9a62;
+  --temp-soft: rgba(255, 154, 98, 0.16);
+  --rain: #5aa6ff;
+  --rain-soft: rgba(90, 166, 255, 0.22);
+  --cloud: #7d889e;
+  --wind: #3fd0c5;
+  --gust: #8eeae3;
+  --sun: #ffc94a;
+  --storm: #b39bff;
+  --lime-ink: #a8e070;
+  --warn-0: #2f3a50;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  /* room for the card shadow — the bridge measures documentElement height */
+  padding: 2px 6px 18px;
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink);
+  background: transparent;
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+.dwd-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  overflow: hidden;
+}
+
+.dwd-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.dwd-header .dwd-badge-icon {
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  flex: none;
+}
+.dwd-title { font-size: 15px; font-weight: 650; letter-spacing: -0.01em; }
+.dwd-sub { font-size: 12px; color: var(--ink-3); }
+.dwd-eyebrow {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--accent);
+}
+.dwd-kpi { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
+.dwd-muted { color: var(--ink-3); }
+
+.dwd-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px;
+  background: var(--card-2); border: 1px solid var(--line);
+  font-size: 12px; color: var(--ink-2); white-space: nowrap;
+}
+
+.dwd-seg {
+  display: inline-flex; padding: 3px; gap: 2px;
+  background: var(--card-2); border: 1px solid var(--line); border-radius: 999px;
+}
+.dwd-seg button {
+  border: 0; background: transparent; color: var(--ink-2);
+  font: 600 12px/1 var(--font); padding: 7px 12px; border-radius: 999px; cursor: pointer;
+}
+.dwd-seg button[aria-pressed="true"] { background: var(--dwd-blue); color: #fff; }
+
+.dwd-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--line); background: var(--card);
+  color: var(--ink); font: 600 12px/1 var(--font);
+  padding: 8px 12px; border-radius: 999px; cursor: pointer;
+}
+.dwd-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.dwd-footer {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line);
+  font-size: 11px; color: var(--ink-3);
+}
+.dwd-logo {
+  display: inline-grid; place-items: center;
+  font: 800 9px/1 var(--font); letter-spacing: 0.04em;
+  color: #fff; background: var(--dwd-blue); border-radius: 4px; padding: 3px 4px;
+}
+
+.dwd-icon { display: inline-block; vertical-align: middle; flex: none; }
+
+.dwd-skeleton {
+  min-height: 140px; display: grid; place-items: center; color: var(--ink-3); font-size: 13px;
+}
+html[data-state="ready"] .dwd-skeleton { display: none; }
+html:not([data-state="ready"]) .dwd-content { display: none; }
+
+.dwd-error {
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  background: rgba(229, 53, 43, 0.08); color: var(--warn-3); font-size: 12px;
+}
+
+svg text { font-family: var(--font); fill: var(--ink-3); font-size: 10px; }

@@ -1,0 +1,293 @@
+{
+  "generated_at": "2026-10-09T09:25:51Z",
+  "levels": [
+    {
+      "label": "Keine Gefahr",
+      "level": 0
+    },
+    {
+      "label": "Gering",
+      "level": 1
+    },
+    {
+      "label": "Erhöht",
+      "level": 2
+    },
+    {
+      "label": "Hoch",
+      "level": 3
+    }
+  ],
+  "location": {
+    "lat": 48.14,
+    "lon": 11.58,
+    "name": "München"
+  },
+  "model": {
+    "collection_id": "ICON-D2-RUC@single_level",
+    "instance_id": "2026-10-09T08:00:00Z",
+    "reference_time": "2026-10-09T08:00:00Z"
+  },
+  "source": "Deutscher Wetterdienst · ICON-D2-RUC (EDR API)",
+  "steps": [
+    {
+      "cape_jkg": 1,
+      "gust_kmh": 16.6,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0,
+      "risk": 0,
+      "time": "2026-10-09T09:00:00Z",
+      "ww": 3
+    },
+    {
+      "cape_jkg": 2,
+      "gust_kmh": 17.3,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0,
+      "risk": 0,
+      "time": "2026-10-09T10:00:00Z",
+      "ww": 2
+    },
+    {
+      "cape_jkg": 4,
+      "gust_kmh": 17.7,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0,
+      "risk": 0,
+      "time": "2026-10-09T11:00:00Z",
+      "ww": 2
+    },
+    {
+      "cape_jkg": 6,
+      "gust_kmh": 21.8,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0,
+      "risk": 0,
+      "time": "2026-10-09T12:00:00Z",
+      "ww": 1
+    },
+    {
+      "cape_jkg": 7,
+      "gust_kmh": 25.4,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0,
+      "risk": 0,
+      "time": "2026-10-09T13:00:00Z",
+      "ww": 2
+    },
+    {
+      "cape_jkg": 7,
+      "gust_kmh": 29.8,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0,
+      "risk": 0,
+      "time": "2026-10-09T14:00:00Z",
+      "ww": 3
+    },
+    {
+      "cape_jkg": 6,
+      "gust_kmh": 28.8,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0,
+      "risk": 0,
+      "time": "2026-10-09T15:00:00Z",
+      "ww": 2
+    },
+    {
+      "cape_jkg": 2,
+      "gust_kmh": 30,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0,
+      "risk": 0,
+      "time": "2026-10-09T16:00:00Z",
+      "ww": 3
+    },
+    {
+      "cape_jkg": 0,
+      "gust_kmh": 27.7,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0,
+      "risk": 0,
+      "time": "2026-10-09T17:00:00Z",
+      "ww": 3
+    },
+    {
+      "cape_jkg": 0,
+      "gust_kmh": 26.1,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0,
+      "risk": 0,
+      "time": "2026-10-09T18:00:00Z",
+      "ww": 3
+    },
+    {
+      "cape_jkg": 0,
+      "gust_kmh": 25.8,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0,
+      "risk": 0,
+      "time": "2026-10-09T19:00:00Z",
+      "ww": 3
+    },
+    {
+      "cape_jkg": 0,
+      "gust_kmh": 26.4,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0.03,
+      "risk": 0,
+      "time": "2026-10-09T20:00:00Z",
+      "ww": 3
+    },
+    {
+      "cape_jkg": 0,
+      "gust_kmh": 28.9,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0.04,
+      "risk": 0,
+      "time": "2026-10-09T21:00:00Z",
+      "ww": 61
+    },
+    {
+      "cape_jkg": 0,
+      "gust_kmh": 29.4,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0.14,
+      "risk": 0,
+      "time": "2026-10-09T22:00:00Z",
+      "ww": 61
+    },
+    {
+      "cape_jkg": 0,
+      "gust_kmh": 28.1,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0.13,
+      "risk": 0,
+      "time": "2026-10-09T23:00:00Z",
+      "ww": 61
+    },
+    {
+      "cape_jkg": 0,
+      "gust_kmh": 29.2,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0.32,
+      "risk": 0,
+      "time": "2026-10-10T00:00:00Z",
+      "ww": 61
+    },
+    {
+      "cape_jkg": 0,
+      "gust_kmh": 27.6,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0.42,
+      "risk": 0,
+      "time": "2026-10-10T01:00:00Z",
+      "ww": 61
+    },
+    {
+      "cape_jkg": 0,
+      "gust_kmh": 26.8,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0.2,
+      "risk": 0,
+      "time": "2026-10-10T02:00:00Z",
+      "ww": 61
+    },
+    {
+      "cape_jkg": 0,
+      "gust_kmh": 22.4,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0.19,
+      "risk": 0,
+      "time": "2026-10-10T03:00:00Z",
+      "ww": 61
+    },
+    {
+      "cape_jkg": 0,
+      "gust_kmh": 20,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0.28,
+      "risk": 0,
+      "time": "2026-10-10T04:00:00Z",
+      "ww": 61
+    },
+    {
+      "cape_jkg": 0,
+      "gust_kmh": 22.5,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0.38,
+      "risk": 0,
+      "time": "2026-10-10T05:00:00Z",
+      "ww": 61
+    },
+    {
+      "cape_jkg": 0,
+      "gust_kmh": 23.1,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0.31,
+      "risk": 0,
+      "time": "2026-10-10T06:00:00Z",
+      "ww": 61
+    },
+    {
+      "cape_jkg": 0,
+      "gust_kmh": 22.3,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 0.36,
+      "risk": 0,
+      "time": "2026-10-10T07:00:00Z",
+      "ww": 61
+    },
+    {
+      "cape_jkg": 0,
+      "gust_kmh": 23.4,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 1.32,
+      "risk": 0,
+      "time": "2026-10-10T08:00:00Z",
+      "ww": 61
+    },
+    {
+      "cape_jkg": 0,
+      "gust_kmh": 24.7,
+      "hail_mm": 0,
+      "lpi": 0,
+      "precip_mm": 1.7,
+      "risk": 0,
+      "time": "2026-10-10T09:00:00Z",
+      "ww": 61
+    }
+  ],
+  "summary": {
+    "max_cape_jkg": 7,
+    "max_gust_kmh": 30,
+    "max_lpi": 0,
+    "max_risk": 0,
+    "max_risk_time": null,
+    "thunder_hours": 0
+  },
+  "widget": "storm"
+}
