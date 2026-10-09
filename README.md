@@ -40,7 +40,7 @@ The server offers 17 tools in two groups:
 | HTTP client | `reqwest` 0.12 with JSON, 30 s timeout |
 | Data | `serde` / `serde_json` for CoverageJSON, `schemars` for the tool input JSON Schemas, `chrono` for time handling |
 | Errors | `anyhow` |
-| Transport | stdio (JSON-RPC over stdin/stdout); there is no HTTP endpoint |
+| Transport | stdio (JSON-RPC over stdin/stdout) |
 | Widgets | Plain HTML, CSS and JavaScript with no framework and no network access, compiled into the binary with `include_str!` |
 | Dev tooling | Node 20+ and Playwright for the widget preview and screenshots (optional) |
 
@@ -323,3 +323,6 @@ widget, follow [docs/widgets.md](docs/widgets.md#adding-a-new-widget).
 Weather data: [Deutscher Wetterdienst Open Data](https://opendata.dwd.de), via the
 [EDR API](https://nwp.opendata-api.dwd.de/v1beta1/docs). Credit "Quelle: Deutscher Wetterdienst" when you show it.
 All values are model forecasts, not observations.
+
+## TODOS
+* support streamable via CLI argument
