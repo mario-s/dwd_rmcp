@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DWD · Windprofil</title>
+  <!--DWD:SHARED-->
+  <style>
+
+    .hd-right { margin-left: auto; }
+    .hd-text { min-width: 0; }
+    .hd-text .dwd-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* KPI tiles */
+    .kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+    .kpi {
+      display: flex; align-items: center; gap: 10px; min-width: 0;
+      padding: 7px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--card);
+      text-align: left; font: inherit; color: inherit;
+    }
+    button.kpi { cursor: pointer; }
+    button.kpi:hover { border-color: var(--accent); }
+    .kpi-ic {
+      width: 30px; height: 30px; flex: none; display: grid; place-items: center;
+      border-radius: 8px; background: var(--dwd-lime-soft); color: var(--lime-ink);
+    }
+    .kpi-tx { min-width: 0; }
+    .kpi-v { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; white-space: nowrap; }
+    .kpi-v small { font-size: 12px; font-weight: 600; color: var(--ink-2); margin-left: 2px; }
+    .kpi-l { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* main area */
+    .main { display: grid; grid-template-columns: 164px minmax(0, 1fr); gap: 14px; align-items: start; }
+    .side { display: flex; flex-direction: column; align-items: stretch; gap: 0; padding-top: 2px; }
+    .compass { width: 100%; max-width: 164px; aspect-ratio: 1; display: block; margin: 0 auto; }
+    .compass .needle { transition: transform 0.35s cubic-bezier(.3,.7,.3,1); transform-origin: 100px 100px; }
+    .compass .tick { stroke: var(--ink-3); opacity: 0.45; }
+    .compass .tick.major { opacity: 0.9; }
+    .compass .card-lbl { font-size: 13px; font-weight: 700; fill: var(--ink); }
+    .compass .card-lbl, .compass .ic-lbl { paint-order: stroke; stroke: var(--card-2); stroke-width: 4.5px; stroke-linejoin: round; }
+    .compass .ic-lbl { font-size: 9px; font-weight: 600; fill: var(--ink-3); }
+    .compass .c-val { font-size: 24px; font-weight: 750; fill: var(--ink); letter-spacing: -0.02em; }
+    .compass .c-unit { font-size: 9.5px; fill: var(--ink-3); font-weight: 600; }
+
+    .detail {
+      border: 1px solid var(--line); background: var(--card-2); border-radius: 12px; padding: 7px 14px; margin-top: 8px;
+      display: grid; grid-template-columns: minmax(0, 1.7fr) repeat(3, minmax(0, 1fr)); gap: 12px; align-items: center;
+    }
+    .d-when { font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); margin-bottom: 5px; }
+    .main ~ .detail .d-when { display: none; }
+    .stat { min-width: 0; border-left: 1px solid var(--line); padding-left: 10px; }
+    .stat span { display: block; font-size: 11px; color: var(--ink-3); white-space: nowrap; }
+    .stat b { display: block; font-size: 14px; font-weight: 700; white-space: nowrap; }
+    .cap { display: flex; justify-content: center; gap: 10px; font-size: 10.5px; color: var(--ink-2); margin-top: 4px; }
+    .cap span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .bft { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; min-width: 0; }
+    .bft-n {
+      flex: none; min-width: 34px; height: 26px; padding: 0 7px; border-radius: 8px;
+      display: grid; place-items: center; font-weight: 750; font-size: 13px;
+      background: var(--accent); color: #fff;
+    }
+    .bft-name { font-weight: 650; font-size: 13px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bft-scale { display: grid; grid-template-columns: repeat(13, 1fr); gap: 2px; }
+    .bft-scale i { height: 4px; border-radius: 2px; background: var(--line); }
+    .bft-scale i.on { background: var(--accent); }
+    .rows { display: grid; gap: 4px; font-size: 12.5px; }
+    .rows div { display: flex; justify-content: space-between; gap: 8px; }
+    .rows span:first-child { color: var(--ink-3); }
+    .rows b { font-weight: 650; white-space: nowrap; }
+    .lvl-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
+
+    /* chart */
+    .chart-wrap { min-width: 0; }
+    .chart-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+    .chart-title { font-size: 12.5px; font-weight: 650; color: var(--ink-2); }
+    .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--ink-2); }
+    .legend span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .sw { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+    .sw-band { width: 12px; height: 10px; border-radius: 3px; background: linear-gradient(180deg, var(--warn-3) 0 33%, var(--warn-2) 33% 66%, var(--warn-1) 66%); opacity: 0.75; }
+    svg.chart { display: block; width: 100%; overflow: visible; touch-action: pan-y; }
+    svg.chart .grid { stroke: var(--line); stroke-width: 1; }
+    svg.chart .hit { fill: transparent; cursor: crosshair; }
+    svg.chart .tt-bg { fill: var(--ink); }
+    svg.chart .tt-tx { fill: var(--card); font-size: 10.5px; font-weight: 600; }
+    svg.chart .arrow { color: var(--ink-3); }
+    svg.chart .arrow.sel { color: var(--accent); }
+
+    /* scrubber (timeline) */
+    .scrub {
+      display: flex; align-items: center; gap: 12px; margin-top: 8px;
+      padding: 6px 14px 6px 6px; border-radius: 14px; background: var(--card-2); border: 1px solid var(--line);
+    }
+    .play {
+      width: 34px; height: 34px; flex: none; border: 0; border-radius: 9px; cursor: pointer;
+      display: grid; place-items: center; background: var(--dwd-blue); color: #fff;
+    }
+    .play:hover { background: var(--dwd-blue-strong); }
+    .play:focus-visible, .track input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .now { flex: none; display: flex; flex-direction: column; line-height: 1.05; min-width: 52px; }
+    .now b { font-size: 16px; font-weight: 750; letter-spacing: -0.01em; }
+    .now span { font-size: 9.5px; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-top: 3px; }
+    .track { position: relative; flex: 1; min-width: 0; height: 34px; }
+    .track .rail { position: absolute; left: 9px; right: 9px; top: 9px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+    .track .seg { position: absolute; top: 0; bottom: 0; }
+    .track .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); border-radius: 3px; }
+    .track input {
+      position: absolute; inset: 0 0 auto 0; width: 100%; height: 24px; margin: 0; background: transparent;
+      -webkit-appearance: none; appearance: none; cursor: pointer;
+    }
+    .track input::-webkit-slider-runnable-track { height: 24px; background: transparent; }
+    .track input::-moz-range-track { height: 24px; background: transparent; }
+    .track input::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 18px; height: 18px; margin-top: 3px; border-radius: 50%;
+      background: #fff; border: 4px solid var(--accent); box-shadow: 0 1px 4px rgba(20,33,61,.3);
+    }
+    .track input::-moz-range-thumb { width: 10px; height: 10px; border-radius: 50%; background: #fff; border: 4px solid var(--accent); }
+    .ticks { position: absolute; left: 9px; right: 9px; top: 21px; height: 12px; }
+    .ticks span { position: absolute; transform: translateX(-50%); font-size: 10px; color: var(--ink-3); white-space: nowrap; }
+
+    .foot-l { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+    .foot-l span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dwd-footer > span:last-child { white-space: nowrap; }
+
+    /* narrow */
+    .narrow .main { grid-template-columns: 1fr; }
+    .narrow .side { flex-direction: row; align-items: center; gap: 12px; padding-top: 0; }
+    .narrow .compass-box { width: 132px; flex: none; }
+    .narrow .compass { width: 132px; }
+    .narrow .cap { flex-direction: column; align-items: flex-start; gap: 2px; margin-left: 10px; }
+    .narrow .detail { flex: 1; min-width: 0; margin-top: 0; display: block; }
+    .narrow .bft-scale { margin-bottom: 8px; }
+    .narrow .bft-name { white-space: normal; }
+    .narrow .stat { border-left: 0; padding: 2px 0 0; display: flex; justify-content: space-between; gap: 8px; }
+    .narrow .stat span { font-size: 12px; }
+    .narrow .stat b { font-size: 12.5px; }
+    .narrow .kpis { gap: 6px; }
+    .narrow .kpi { flex-direction: column; align-items: flex-start; gap: 6px; padding: 9px 10px; }
+    .narrow .kpi-ic { width: 26px; height: 26px; border-radius: 7px; }
+    .narrow .kpi-v { font-size: 16px; }
+    .narrow .hd-right { display: none; }
+    .narrow .now { min-width: 44px; }
+  </style>
+</head>
+<body>
+  <div class="dwd-card">
+    <div class="dwd-skeleton">Lade DWD-Daten …</div>
+    <div class="dwd-content" id="app"></div>
+  </div>
+  <script>
+  (function () {
+    "use strict";
+    const app = document.getElementById("app");
+    const F = DWD.fmt, esc = F.esc;
+    const isNum = (v) => typeof v === "number" && isFinite(v);
+    const BFT = ["Windstille", "Leiser Zug", "Leichte Brise", "Schwache Brise", "Mäßige Brise", "Frische Brise",
+      "Starker Wind", "Steifer Wind", "Stürmischer Wind", "Sturm", "Schwerer Sturm", "Orkanartiger Sturm", "Orkan"];
+    const DIRNAME = { N: "Nord", NO: "Nordost", O: "Ost", SO: "Südost", S: "Süd", SW: "Südwest", W: "West", NW: "Nordwest" };
+    const THR = [50, 65, 90];
+    const LVL_NAME = ["", "Windböen", "Sturmböen", "Orkanartige Böen"];
+
+    let D = null, steps = [], sel = 0, timer = null, lastW = 0, rot = null, els = {};
+
+    const dirName = (deg) => (isNum(deg) ? DIRNAME[F.windDir(deg)] || "–" : "–");
+    const gustLvl = (g) => (isNum(g) ? (g >= 90 ? 3 : g >= 65 ? 2 : g >= 50 ? 1 : 0) : 0);
+    const dirLabel = (deg) => (isNum(deg) ? "aus " + dirName(deg) + " · " + F.num(((deg % 360) + 360) % 360) + "°" : "–");
+    const shortModel = (m) => (m && m.collection_id ? String(m.collection_id).split("@")[0] : "DWD");
+    const hh = (iso) => (iso ? F.time(iso).slice(0, 2) : "–");
+    const dirShort = (deg) => (isNum(deg) ? F.windDir(deg) + " · " + F.num(((deg % 360) + 360) % 360) + "°" : "–");
+    const wdayTime = (iso) => (iso ? new Date(iso).toLocaleDateString("de-DE", { weekday: "short", timeZone: "Europe/Berlin" }).replace(".", "") + " " + F.time(iso) : "–");
+    const localHourNum = F.localHour || ((iso) => Number(new Date(iso).toLocaleString("en-GB", { hour: "2-digit", hour12: false, timeZone: "Europe/Berlin" })) % 24);
+
+    // summary value, else the direction of the speed-weighted mean wind vector
+    function prevailing() {
+      const v = D && D.summary && D.summary.prevailing_dir_deg;
+      if (isNum(v)) return v;
+      let u = 0, w = 0;
+      steps.forEach((s) => {
+        if (!isNum(s.wind_dir_deg) || !isNum(s.wind_speed_kmh)) return;
+        const r = (s.wind_dir_deg * Math.PI) / 180, k = s.wind_speed_kmh * s.wind_speed_kmh;
+        u += Math.sin(r) * k; w += Math.cos(r) * k;
+      });
+      return u || w ? Math.round(((Math.atan2(u, w) * 180) / Math.PI + 360) % 360) : null;
+    }
+
+    function nearestNow(st) {
+      const now = Date.now();
+      let best = 0, bd = Infinity;
+      st.forEach((s, i) => { const d = Math.abs(Date.parse(s.time) - now); if (d < bd) { bd = d; best = i; } });
+      return bd <= 3600e3 ? best : 0;
+    }
+
+    function niceStep(range, target) {
+      const raw = range / target, p = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p;
+      return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p;
+    }
+
+    // ---------- compass ----------
+    function compassSVG() {
+      const c = 100, parts = [];
+      parts.push('<circle cx="100" cy="100" r="94" fill="var(--card-2)" stroke="var(--line)"/>');
+      // wind-rose petals: speed-weighted frequency per 16 sectors
+      const bins = new Array(16).fill(0);
+      steps.forEach((s) => {
+        if (isNum(s.wind_dir_deg) && isNum(s.wind_speed_kmh)) bins[Math.round((((s.wind_dir_deg % 360) + 360) % 360) / 22.5) % 16] += s.wind_speed_kmh;
+      });
+      const bmax = Math.max.apply(null, bins) || 1;
+      bins.forEach((v, k) => {
+        if (!v) return;
+        const r0 = 30, r1 = 30 + (v / bmax) * 34, a0 = (k * 22.5 - 9) * Math.PI / 180, a1 = (k * 22.5 + 9) * Math.PI / 180;
+        const p = (r, a) => (c + r * Math.sin(a)).toFixed(1) + "," + (c - r * Math.cos(a)).toFixed(1);
+        parts.push('<path d="M' + p(r0, a0) + " L" + p(r1, a0) + " A" + r1 + "," + r1 + " 0 0 1 " + p(r1, a1) + " L" + p(r0, a1) +
+          " A" + r0 + "," + r0 + ' 0 0 0 ' + p(r0, a0) + 'z" fill="var(--wind)" opacity="' + (0.16 + 0.34 * v / bmax).toFixed(2) + '"/>');
+      });
+      // ticks
+      for (let a = 0; a < 360; a += 7.5) {
+        const major = a % 45 === 0, r0 = major ? 84 : 88, rad = a * Math.PI / 180;
+        parts.push('<line class="tick' + (major ? " major" : "") + '" x1="' + (c + r0 * Math.sin(rad)).toFixed(1) + '" y1="' + (c - r0 * Math.cos(rad)).toFixed(1) +
+          '" x2="' + (c + 92 * Math.sin(rad)).toFixed(1) + '" y2="' + (c - 92 * Math.cos(rad)).toFixed(1) + '"/>');
+      }
+      // prevailing direction arc (lime)
+      const pv = prevailing();
+      if (isNum(pv)) {
+        const a0 = (pv - 14) * Math.PI / 180, a1 = (pv + 14) * Math.PI / 180, r = 94;
+        parts.push('<path d="M' + (c + r * Math.sin(a0)).toFixed(1) + "," + (c - r * Math.cos(a0)).toFixed(1) + " A" + r + "," + r + " 0 0 1 " +
+          (c + r * Math.sin(a1)).toFixed(1) + "," + (c - r * Math.cos(a1)).toFixed(1) + '" fill="none" stroke="var(--dwd-lime)" stroke-width="6" stroke-linecap="round"/>');
+      }
+      // needle (rotated per selected hour; drawn for "from north", flow pointing south)
+      parts.push('<g class="needle" id="needle">' +
+        '<line x1="100" y1="17" x2="100" y2="150" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>' +
+        '<path d="M100 163 L91 143 L100 147 L109 143 Z" fill="var(--accent)"/>' +
+        '<circle cx="100" cy="13" r="4.5" fill="var(--card)" stroke="var(--accent)" stroke-width="2.5"/>' +
+        "</g>");
+      // labels (drawn above the needle, with a halo so they stay legible)
+      [["N", 0, 1], ["NO", 45, 0], ["O", 90, 1], ["SO", 135, 0], ["S", 180, 1], ["SW", 225, 0], ["W", 270, 1], ["NW", 315, 0]].forEach(([t, a, maj]) => {
+        const r = maj ? 73 : 74, rad = a * Math.PI / 180;
+        parts.push('<text class="' + (maj ? "card-lbl" : "ic-lbl") + '" x="' + (c + r * Math.sin(rad)).toFixed(1) + '" y="' + (c - r * Math.cos(rad)).toFixed(1) +
+          '" text-anchor="middle" dominant-baseline="central">' + t + "</text>");
+      });
+      parts.push('<circle cx="100" cy="100" r="27" fill="var(--card)" stroke="var(--line)"/>');
+      parts.push('<text class="c-val" id="cval" x="100" y="97" text-anchor="middle" dominant-baseline="central">–</text>');
+      parts.push('<text class="c-unit" x="100" y="116" text-anchor="middle">km/h</text>');
+      return '<svg class="compass" viewBox="0 0 200 200" role="img" aria-label="Windrose">' + parts.join("") + "</svg>";
+    }
+
+    // ---------- chart ----------
+    let CH = null; // geometry for cursor updates
+    function chartSVG(width) {
+      const n = steps.length, H = 176, padL = 30, padR = 26, padT = 10, plotB = H - 38;
+      const W = Math.max(240, width);
+      const pw = W - padL - padR, ph = plotB - padT;
+      const X = (i) => padL + (n > 1 ? (i * pw) / (n - 1) : pw / 2);
+      let vmax = 0;
+      steps.forEach((s) => { [s.gust_kmh, s.wind_speed_kmh].forEach((v) => { if (isNum(v) && v > vmax) vmax = v; }); });
+      const top = Math.max(vmax * 1.08, 58);
+      const st = niceStep(top, 4);
+      const ymax = Math.ceil(top / st) * st;
+      const Y = (v) => plotB - (v / ymax) * ph;
+      const out = [];
+      // threshold bands
+      THR.forEach((t, k) => {
+        if (t >= ymax) return;
+        const hi = Math.min(THR[k + 1] || ymax, ymax);
+        out.push('<rect x="' + padL + '" y="' + Y(hi).toFixed(1) + '" width="' + pw + '" height="' + (Y(t) - Y(hi)).toFixed(1) + '" fill="var(--warn-' + (k + 1) + ')" opacity="0.10"/>');
+      });
+      // grid + y labels
+      for (let v = 0; v <= ymax + 1e-6; v += st) {
+        out.push('<line class="grid" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '"/>');
+        out.push('<text x="' + (padL - 6) + '" y="' + Y(v).toFixed(1) + '" text-anchor="end" dominant-baseline="central">' + F.num(v) + "</text>");
+      }
+      // threshold lines + labels
+      THR.forEach((t, k) => {
+        if (t >= ymax) return;
+        out.push('<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + Y(t).toFixed(1) + '" y2="' + Y(t).toFixed(1) + '" stroke="var(--warn-' + (k + 1) + ')" stroke-width="1.5" stroke-dasharray="4 3"/>');
+        out.push('<circle cx="' + (W - padR + 7) + '" cy="' + Y(t).toFixed(1) + '" r="3" fill="var(--warn-' + (k + 1) + ')"/>');
+        out.push('<text x="' + (W - padR + 12) + '" y="' + Y(t).toFixed(1) + '" dominant-baseline="central">' + t + "</text>");
+      });
+      // series paths (break on null)
+      function path(key) {
+        let d = "", pen = false;
+        steps.forEach((s, i) => {
+          const v = s[key];
+          if (!isNum(v)) { pen = false; return; }
+          d += (pen ? "L" : "M") + X(i).toFixed(1) + "," + Y(v).toFixed(1);
+          pen = true;
+        });
+        return d;
+      }
+      function area(key) {
+        let d = "", run = [];
+        const flush = () => {
+          if (run.length > 1) d += "M" + X(run[0]).toFixed(1) + "," + plotB + run.map((i) => "L" + X(i).toFixed(1) + "," + Y(steps[i][key]).toFixed(1)).join("") + "L" + X(run[run.length - 1]).toFixed(1) + "," + plotB + "Z";
+          run = [];
+        };
+        steps.forEach((s, i) => { if (isNum(s[key])) run.push(i); else flush(); });
+        flush();
+        return d;
+      }
+      out.push('<defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--wind)" stop-opacity="0.32"/><stop offset="1" stop-color="var(--wind)" stop-opacity="0.04"/></linearGradient></defs>');
+      out.push('<path d="' + area("wind_speed_kmh") + '" fill="url(#wg)"/>');
+      out.push('<path d="' + path("wind_speed_kmh") + '" fill="none" stroke="var(--wind)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>');
+      out.push('<path d="' + path("gust_kmh") + '" fill="none" stroke="var(--gust)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>');
+      // max gust direct label
+      const mg = D.summary || {};
+      let gi = -1, gv = -Infinity;
+      steps.forEach((s, i) => { if (isNum(s.gust_kmh) && s.gust_kmh > gv) { gv = s.gust_kmh; gi = i; } });
+      if (gi >= 0) {
+        const lx = Math.min(Math.max(X(gi), padL + 30), W - padR - 30);
+        out.push('<circle cx="' + X(gi).toFixed(1) + '" cy="' + Y(gv).toFixed(1) + '" r="4" fill="var(--gust)" stroke="var(--card)" stroke-width="2"/>');
+        out.push('<text x="' + lx.toFixed(1) + '" y="' + (Y(gv) - 9).toFixed(1) + '" text-anchor="middle" style="fill:var(--ink);font-weight:650">' + F.num(gv) + " km/h</text>");
+      }
+      // x labels + direction arrows
+      const spacing = n > 1 ? pw / (n - 1) : pw;
+      const arrowEvery = spacing >= 15 ? 1 : spacing >= 8 ? 2 : 3;
+      const labelEvery = spacing * 3 >= 34 ? 3 : 6;
+      steps.forEach((s, i) => {
+        if (i % arrowEvery === 0 && isNum(s.wind_dir_deg)) {
+          out.push('<g class="arrow" data-i="' + i + '" transform="translate(' + X(i).toFixed(1) + "," + (plotB + 12) + ") rotate(" + ((s.wind_dir_deg + 180) % 360) + ')">' +
+            '<path d="M0,-5.5 L0,5 M-3,-1.5 L0,-5.5 L3,-1.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></g>');
+        }
+        if (localHourNum(s.time) % labelEvery === 0) {
+          out.push('<text x="' + X(i).toFixed(1) + '" y="' + (plotB + 32) + '" text-anchor="middle">' + hh(s.time) + "</text>");
+        }
+      });
+      out.push('<line class="grid" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + plotB + '" y2="' + plotB + '" style="stroke:var(--ink-3);opacity:.5"/>');
+      // cursor
+      out.push('<g id="cursor" style="pointer-events:none"><line id="cur-l" y1="' + padT + '" y2="' + plotB + '" stroke="var(--ink-2)" stroke-width="1"/>' +
+        '<circle id="cur-w" r="4" fill="var(--wind)" stroke="var(--card)" stroke-width="2"/><circle id="cur-g" r="4" fill="var(--gust)" stroke="var(--card)" stroke-width="2"/>' +
+        '<g id="tt"><rect class="tt-bg" id="tt-bg" rx="6" height="20"/><text class="tt-tx" id="tt-tx" y="14"></text></g></g>');
+      out.push('<rect class="hit" id="hit" x="' + padL + '" y="0" width="' + pw + '" height="' + (plotB + 20) + '"/>');
+      CH = { X, Y, padL, padR, padT, plotB, W, spacing };
+      return '<svg class="chart" id="chart" viewBox="0 0 ' + W + " " + H + '" height="' + H + '" role="img" aria-label="Zeitreihe Mittelwind und Böen">' + out.join("") + "</svg>";
+    }
+
+    // ---------- scrubber ----------
+    function scrubHTML() {
+      const n = steps.length, segs = [], ticks = [];
+      const pos = (i) => (n > 1 ? (i / (n - 1)) * 100 : 50);
+      steps.forEach((s, i) => {
+        const l = gustLvl(s.gust_kmh);
+        if (!l) return;
+        const a = Math.max(0, pos(i - 0.5)), b = Math.min(100, pos(i + 0.5));
+        segs.push('<span class="seg" style="left:' + a.toFixed(2) + "%;width:" + (b - a).toFixed(2) + "%;background:var(--warn-" + l + ')"></span>');
+      });
+      const narrow = app.classList.contains("narrow");
+      const every = narrow ? 6 : 3;
+      steps.forEach((s, i) => {
+        if (localHourNum(s.time) % every === 0 && pos(i) > 3 && pos(i) < 97) ticks.push('<span style="left:' + pos(i).toFixed(2) + '%">' + hh(s.time) + "</span>");
+      });
+      return '<div class="scrub">' +
+        '<button class="play" id="play" type="button" aria-label="Abspielen">' + DWD.icon("play", 18) + "</button>" +
+        '<div class="now"><b id="s-time">–</b><span id="s-tag">–</span></div>' +
+        '<div class="track"><div class="rail"><span class="fill" id="s-fill"></span>' + segs.join("") + "</div>" +
+        '<input type="range" id="range" min="0" max="' + Math.max(0, n - 1) + '" step="1" value="' + sel + '" aria-label="Zeitpunkt wählen"/>' +
+        '<div class="ticks">' + ticks.join("") + "</div></div></div>";
+    }
+
+    function setPlaying(on) {
+      if (timer) { clearInterval(timer); timer = null; }
+      if (on) {
+        if (sel >= steps.length - 1) select(0);
+        timer = setInterval(() => {
+          if (!document.body.contains(els.play) || sel >= steps.length - 1) { setPlaying(false); return; }
+          select(sel + 1);
+        }, 650);
+      }
+      if (els.play) {
+        els.play.innerHTML = DWD.icon(on ? "pause" : "play", 18);
+        els.play.setAttribute("aria-label", on ? "Pause" : "Abspielen");
+      }
+    }
+
+    // ---------- selection update (no full re-render) ----------
+    function select(i) {
+      if (!steps.length) return;
+      sel = Math.max(0, Math.min(steps.length - 1, i | 0));
+      const s = steps[sel];
+      const spd = s.wind_speed_kmh, g = s.gust_kmh, dir = s.wind_dir_deg;
+      // compass
+      if (els.needle && isNum(dir)) {
+        rot = rot == null ? dir : rot + ((((dir - rot) % 360) + 540) % 360) - 180;
+        els.needle.style.transform = "rotate(" + rot + "deg)";
+        els.needle.style.opacity = "1";
+      } else if (els.needle) els.needle.style.opacity = "0";
+      if (els.cval) els.cval.textContent = F.num(spd);
+      // details
+      const b = F.beaufort(spd);
+      if (els.detail) {
+        const lvl = gustLvl(g);
+        els.detail.innerHTML =
+          '<div class="d-main"><div class="d-when">' + esc(wdayTime(s.time)) + "</div>" +
+          '<div class="bft"><span class="bft-n">' + (b == null ? "–" : "Bft " + b) + '</span><span class="bft-name">' + esc(b == null ? "Keine Daten" : BFT[b]) + "</span></div>" +
+          '<div class="bft-scale" aria-hidden="true">' + BFT.map((_, k) => '<i class="' + (b != null && k <= b ? "on" : "") + '"></i>').join("") + "</div></div>" +
+          '<div class="stat"><span>Mittelwind</span><b>' + F.kmh(spd) + "</b></div>" +
+          '<div class="stat"><span>Böen</span><b>' + (lvl ? '<i class="lvl-dot" style="background:var(--warn-' + lvl + ')"></i>' : "") + F.kmh(g) + "</b></div>" +
+          '<div class="stat" title="' + esc(dirLabel(dir)) + '"><span>Richtung</span><b>' + esc(dirShort(dir)) + "</b></div>";
+      }
+      // chart cursor
+      if (CH && els.chart) {
+        const x = CH.X(sel);
+        els.curL.setAttribute("x1", x); els.curL.setAttribute("x2", x);
+        const setDot = (el, v) => { if (isNum(v)) { el.setAttribute("cx", x); el.setAttribute("cy", CH.Y(v)); el.style.display = ""; } else el.style.display = "none"; };
+        setDot(els.curW, spd); setDot(els.curG, g);
+        els.ttTx.textContent = F.time(s.time) + " · Wind " + F.num(spd) + " · Böe " + F.num(g) + " km/h";
+        const tw = els.ttTx.getComputedTextLength ? els.ttTx.getComputedTextLength() + 14 : 120;
+        const tx = Math.min(Math.max(x - tw / 2, CH.padL), CH.W - CH.padR - tw);
+        els.ttBg.setAttribute("x", tx); els.ttBg.setAttribute("width", tw); els.ttBg.setAttribute("y", 0);
+        els.ttTx.setAttribute("x", tx + 7);
+        els.tt.setAttribute("transform", "translate(0," + (CH.padT - 10) + ")");
+        els.chart.querySelectorAll(".arrow").forEach((a) => a.classList.toggle("sel", Number(a.dataset.i) === sel));
+      }
+      // scrubber
+      if (els.range) {
+        els.range.value = String(sel);
+        const p = steps.length > 1 ? (sel / (steps.length - 1)) * 100 : 50;
+        els.fill.style.width = p + "%";
+        els.sTime.textContent = F.time(s.time);
+        const isNow = Math.abs(Date.parse(s.time) - Date.now()) < 1800e3;
+        els.sTag.textContent = isNow ? "Jetzt" : new Date(s.time).toLocaleDateString("de-DE", { weekday: "short", timeZone: "Europe/Berlin" }).replace(".", "");
+      }
+    }
+
+    // ---------- full render ----------
+    function render(data) {
+      if (!data) return;
+      const changed = data !== D;
+      D = data;
+      steps = Array.isArray(data.steps) ? data.steps.filter((s) => s && s.time) : [];
+      if (changed) { setPlaying(false); sel = nearestNow(steps); rot = null; }
+      const width = app.clientWidth || 600;
+      lastW = width;
+      app.classList.toggle("narrow", width < 520);
+      const narrow = width < 520;
+      const loc = (data.location && data.location.name) || (data.location ? F.num(data.location.lat, 2) + "° N, " + F.num(data.location.lon, 2) + "° O" : "");
+      const m = data.model || {};
+      const sum = data.summary || {};
+
+      // forecast span = last − first step (steps are hours+1 inclusive)
+      const spanH = steps.length > 1 ? Math.round((Date.parse(steps[steps.length - 1].time) - Date.parse(steps[0].time)) / 3600e3) : null;
+      const header = '<div class="dwd-header"><div class="dwd-badge-icon">' + DWD.icon("wind", 18) + "</div>" +
+        '<div class="hd-text"><div class="dwd-title">Windprofil' + (loc ? " · " + esc(loc) : "") + "</div>" +
+        '<div class="dwd-sub">' + esc(shortModel(m)) + " · Lauf " + esc(wdayTime(m.reference_time || m.instance_id)) + (spanH != null ? " · " + spanH + " h" : "") + "</div></div>" +
+        (isNum(sum.max_gust_kmh) && gustLvl(sum.max_gust_kmh) ? '<span class="dwd-chip hd-right"><i class="lvl-dot" style="background:var(--warn-' + gustLvl(sum.max_gust_kmh) + ')"></i>' + LVL_NAME[gustLvl(sum.max_gust_kmh)] + "</span>" : "") +
+        "</div>";
+
+      if (!steps.length) {
+        app.innerHTML = header + '<div class="dwd-error">Für diesen Ort liegen keine Winddaten vor.</div>';
+        els = {};
+        return;
+      }
+
+      // fallbacks if summary is partial
+      const speeds = steps.map((s) => s.wind_speed_kmh).filter(isNum);
+      const mean = isNum(sum.mean_speed_kmh) ? sum.mean_speed_kmh : speeds.length ? speeds.reduce((a, b) => a + b, 0) / speeds.length : null;
+      let mg = sum.max_gust_kmh, mgt = sum.max_gust_time;
+      if (!isNum(mg)) steps.forEach((s) => { if (isNum(s.gust_kmh) && (!isNum(mg) || s.gust_kmh > mg)) { mg = s.gust_kmh; mgt = s.time; } });
+      const pv = prevailing();
+
+      const kpi = (ic, v, unit, l, attrs) => '<' + (attrs ? 'button type="button" class="kpi" ' + attrs : 'div class="kpi"') + '><span class="kpi-ic">' + DWD.icon(ic, narrow ? 15 : 18) + '</span><span class="kpi-tx"><div class="kpi-v">' + v + (unit && v !== "–" ? "<small>" + unit + "</small>" : "") + '</div><div class="kpi-l">' + l + "</div></span></" + (attrs ? "button" : "div") + ">";
+      const kpis = '<div class="kpis">' +
+        kpi("wind", F.num(mean), "km/h", "Ø Wind" + (isNum(mean) ? " · Bft " + F.beaufort(mean) : "")) +
+        kpi("warn", F.num(mg), "km/h", "Max. Böe" + (mgt ? " · " + esc(F.time(mgt)) : ""), mgt ? 'id="k-gust" title="Zur stärksten Böe springen"' : "") +
+        kpi("pin", isNum(pv) ? esc(F.windDir(pv)) : "–", isNum(pv) ? F.num(pv) + "°" : "", "Hauptrichtung") +
+        "</div>";
+
+      const chartW = narrow ? width : width - 164 - 14;
+      const detail = '<div class="detail" id="detail"></div>';
+      const cap = '<div class="cap"><span><i class="sw" style="background:var(--dwd-lime);height:4px"></i>Hauptrichtung</span><span><i class="sw" style="background:var(--wind);opacity:.45;height:8px;width:10px"></i>Häufigkeit</span></div>';
+      const main = '<div class="main"><div class="side"><div class="compass-box">' + compassSVG() + cap + "</div>" + (narrow ? detail : "") + "</div>" +
+        '<div class="chart-wrap"><div class="chart-head"><span class="chart-title">Wind &amp; Böen (km/h)</span><span class="legend">' +
+        '<span><i class="sw" style="background:var(--wind)"></i>Mittelwind</span>' +
+        '<span><i class="sw" style="background:var(--gust)"></i>Böen</span>' +
+        '<span><i class="sw-band"></i>Warnschwellen</span></span></div>' +
+        chartSVG(chartW) + "</div></div>" + (narrow ? "" : detail);
+
+      const footer = '<div class="dwd-footer"><span class="foot-l"><span class="dwd-logo">DWD</span><span>' + esc(data.source || "Deutscher Wetterdienst") + "</span></span>" +
+        "<span>Stand " + esc(F.time(data.generated_at)) + "</span></div>";
+
+      app.innerHTML = header + kpis + main + scrubHTML() + footer;
+
+      const $ = (id) => app.querySelector("#" + id);
+      els = {
+        needle: $("needle"), cval: $("cval"), detail: $("detail"), chart: $("chart"),
+        curL: $("cur-l"), curW: $("cur-w"), curG: $("cur-g"), tt: $("tt"), ttBg: $("tt-bg"), ttTx: $("tt-tx"),
+        range: $("range"), fill: $("s-fill"), sTime: $("s-time"), sTag: $("s-tag"), play: $("play"),
+      };
+      // re-rendering resets the needle transform; snap without animation then re-enable
+      if (els.needle) { els.needle.style.transition = "none"; }
+      select(sel);
+      if (els.needle) { void els.needle.getBoundingClientRect(); els.needle.style.transition = ""; }
+
+      els.range.addEventListener("input", () => { setPlaying(false); select(Number(els.range.value)); });
+      els.play.addEventListener("click", () => setPlaying(!timer));
+      if (timer) setPlaying(true);
+      const kg = $("k-gust");
+      if (kg) kg.addEventListener("click", () => { setPlaying(false); const k = steps.findIndex((s) => s.time === mgt); if (k >= 0) select(k); });
+      const hit = $("hit");
+      const pick = (ev) => {
+        const r = els.chart.getBoundingClientRect();
+        const x = ((ev.clientX - r.left) / r.width) * CH.W;
+        const n = steps.length;
+        const i = Math.round(((x - CH.padL) / (CH.W - CH.padL - CH.padR)) * (n - 1));
+        if (i !== sel) { setPlaying(false); select(i); }
+      };
+      hit.addEventListener("pointermove", pick);
+      hit.addEventListener("pointerdown", pick);
+      DWD.resize();
+    }
+
+    DWD.onData((data) => render(data));
+    let rq = 0;
+    new ResizeObserver(() => {
+      const w = app.clientWidth;
+      if (!D || Math.abs(w - lastW) < 2) return;
+      cancelAnimationFrame(rq);
+      rq = requestAnimationFrame(() => render(D));
+    }).observe(app);
+  })();
+  </script>
+</body>
+</html>

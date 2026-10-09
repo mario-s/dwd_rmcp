@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DWD · Datenquellen</title>
+  <!--DWD:SHARED-->
+  <style>
+    :root { --map-land: #dfe7f8; --map-edge: #6f8fd6; }
+    :root[data-theme="dark"] { --map-land: rgba(126, 162, 255, 0.16); --map-edge: #7ea2ff; }
+    .dwd-header { flex-wrap: wrap; }
+    .hd-text { min-width: 0; flex: 1 1 160px; }
+    .hd-text .dwd-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tabs { flex: none; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+    .tabs .dwd-seg button { white-space: nowrap; padding: 6px 11px; }
+
+    .top { display: grid; grid-template-columns: 116px minmax(0, 1fr); gap: 14px; align-items: start; }
+    .map { width: 100%; aspect-ratio: 1; display: block; border-radius: 12px; background: var(--card-2); border: 1px solid var(--line); }
+    .map .grat { stroke: var(--line); stroke-width: 1; fill: none; }
+    .map .land { fill: var(--map-land); stroke: var(--map-edge); stroke-width: 1.3; stroke-linejoin: round; }
+    .map .bbox { fill: var(--dwd-lime); fill-opacity: 0.16; stroke: var(--lime-ink); stroke-width: 1.6; stroke-dasharray: 4 3; }
+    .map .lbl { font-size: 10px; fill: var(--ink-3); }
+    .map-cap { font-size: 10px; color: var(--ink-3); text-align: center; margin-top: 4px; line-height: 1.3; }
+
+    .c-title { display: flex; align-items: center; gap: 4px 8px; flex-wrap: wrap; }
+    .c-title h2 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+    .mono { font-family: var(--mono); font-size: 11px; }
+    .idchip { padding: 1px 6px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 10.5px; }
+    .desc {
+      margin: 3px 0 7px; font-size: 12px; color: var(--ink-2); line-height: 1.42;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 10px; }
+    .fact { padding: 5px 10px; min-width: 0; }
+    .fact + .fact { border-left: 1px solid var(--line); }
+    .fact span { display: block; font-size: 10.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fact b { display: block; font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.01em; }
+    .fact b small { font-size: 11px; font-weight: 500; color: var(--ink-3); margin-left: 3px; }
+    .fact b.lime { color: var(--lime-ink); }
+    .qt { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; align-items: center; }
+    .qt .lab { font-size: 11px; color: var(--ink-3); margin-right: 2px; }
+    .qt .dwd-chip { padding: 1px 8px; font-size: 11px; }
+    .qt .bbt { margin-left: auto; font-size: 10.5px; color: var(--ink-3); white-space: nowrap; }
+    .narrow .qt .bbt { margin-left: 0; flex-basis: 100%; }
+
+    .sec { margin-top: 10px; }
+    .tl-sec { margin-top: 4px; }
+    .sec-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 2px; }
+    .sec-t { font-size: 12.5px; font-weight: 650; color: var(--ink-2); }
+    .sec-s { font-size: 11px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sw { display: inline-block; width: 12px; height: 7px; border-radius: 2px; margin: 0 3px 0 8px; vertical-align: 0; }
+    svg.tl { display: block; width: 100%; overflow: visible; }
+    svg.tl .axis { stroke: var(--line); stroke-width: 1; }
+    svg.tl .tick { stroke: var(--accent); stroke-width: 2; stroke-linecap: round; opacity: 0.6; }
+    svg.tl .hz { fill: var(--accent); opacity: 0.22; }
+    svg.tl .now-l { font-size: 10.5px; font-weight: 700; fill: var(--ink); }
+    svg.tl .hz-l { font-size: 10.5px; font-weight: 650; fill: var(--accent); }
+
+    /* parameters */
+    .ptools { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+    .search {
+      flex: 0 1 220px; min-width: 120px; display: flex; align-items: center; gap: 6px; padding: 0 10px; height: 28px;
+      border: 1px solid var(--line); border-radius: 999px; background: var(--card-2); color: var(--ink-3);
+    }
+    .search:focus-within { border-color: var(--accent); }
+    .search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font: 12.5px var(--font); }
+    .search input::-webkit-search-cancel-button { display: none; }
+    .cats { flex: 1; min-width: 0; display: flex; position: relative; scroll-behavior: smooth; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+    .cats::-webkit-scrollbar { display: none; }
+    .cats.more { -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent); mask-image: linear-gradient(90deg, #000 85%, transparent); }
+    .cats button {
+      flex: none; border: 1px solid var(--line); background: var(--card); color: var(--ink-2); border-radius: 999px;
+      font: 600 11px/1 var(--font); padding: 6px 8px; cursor: pointer; white-space: nowrap;
+    }
+    .cats button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .cats button small { opacity: .7; font-weight: 600; margin-left: 2px; }
+    .tbl-wrap { max-height: 138px; overflow: auto; border: 1px solid var(--line); border-radius: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    thead th {
+      position: sticky; top: 0; z-index: 1; background: var(--card-2); text-align: left; font-size: 10px; font-weight: 700;
+      letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); padding: 5px 10px; border-bottom: 1px solid var(--line);
+    }
+    tbody tr.p { cursor: pointer; }
+    tbody tr.p td { padding: 5px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    tbody tr.p:hover td { background: var(--card-2); }
+    tbody tr.p.sel td { background: var(--accent-soft); }
+    tbody tr:last-child td { border-bottom: 0; }
+    td.n { width: 1%; white-space: nowrap; }
+    td.n .mono { font-weight: 650; color: var(--ink); font-size: 11.5px; }
+    td.u { width: 1%; white-space: nowrap; color: var(--ink-3); text-align: right; }
+    td.go { width: 1%; color: var(--ink-3); padding-left: 0 !important; }
+    tr.p:hover td.go, tr.p.sel td.go { color: var(--accent); }
+    tr.ask td { padding: 6px 10px 8px; background: var(--accent-soft); border-bottom: 1px solid var(--line); }
+    .askrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--ink-2); }
+    .askrow .dwd-btn { flex: none; background: var(--dwd-blue); border-color: var(--dwd-blue); color: #fff; padding: 7px 11px; }
+    .askrow .dwd-btn:hover { background: var(--dwd-blue-strong); color: #fff; }
+    .empty { padding: 16px; text-align: center; color: var(--ink-3); font-size: 12.5px; }
+    mark { background: var(--dwd-lime-soft); color: inherit; border-radius: 3px; padding: 0 1px; }
+
+    .foot-l { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+    .foot-l span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dwd-footer > span:last-child { white-space: nowrap; }
+
+    .narrow .top { grid-template-columns: minmax(0, 1fr) 84px; gap: 10px; }
+    .narrow .top .mapcol { order: 2; }
+    .narrow .map-cap { display: none; }
+    .narrow .desc { -webkit-line-clamp: 3; }
+    .narrow .facts-row { margin-top: 8px; }
+    .narrow .ptools { flex-wrap: wrap; }
+    .narrow .search { flex: 1 1 100%; }
+    .narrow .cats { flex: 1 1 100%; }
+    .narrow .askrow { flex-direction: column; align-items: stretch; }
+    .narrow .askrow .dwd-btn { justify-content: center; }
+    .narrow td.u { max-width: 64px; overflow: hidden; text-overflow: ellipsis; }
+    .narrow tbody tr.p td { padding: 5px 8px; }
+    .narrow .nm { font-weight: 650; color: var(--ink); font-size: 11.5px; }
+    .narrow .lb { font-size: 11.5px; color: var(--ink-2); line-height: 1.3; }
+    .narrow .fact b small { display: block; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="dwd-card">
+    <div class="dwd-skeleton">Lade DWD-Daten …</div>
+    <div class="dwd-content" id="app"></div>
+  </div>
+  <script>
+  (function () {
+    "use strict";
+    const app = document.getElementById("app");
+    const F = DWD.fmt, esc = F.esc;
+    const isNum = (v) => typeof v === "number" && isFinite(v);
+    const TZ = "Europe/Berlin";
+
+    // Coarse outline of Germany (lon, lat), clockwise from the Ems estuary.
+    const DE = [
+      [7.0, 53.3], [7.25, 53.68], [8.0, 53.56], [8.5, 53.9], [8.9, 54.02], [8.6, 54.4], [8.65, 54.9], [9.45, 54.83], [9.95, 54.78],
+      [10.15, 54.42], [11.05, 54.42], [10.85, 53.97], [11.5, 54.08], [12.1, 54.2], [12.8, 54.45], [13.4, 54.68], [13.75, 54.18],
+      [14.22, 53.93], [14.4, 53.3], [14.15, 52.85], [14.65, 52.55], [14.55, 52.0], [14.75, 51.5], [15.0, 51.05], [14.3, 50.9],
+      [13.4, 50.63], [12.5, 50.37], [12.1, 50.3], [12.5, 49.95], [12.42, 49.7], [13.0, 49.3], [13.8, 48.78], [13.45, 48.56],
+      [12.88, 48.22], [12.75, 47.75], [13.0, 47.47], [12.2, 47.68], [11.4, 47.45], [10.95, 47.4], [10.2, 47.3], [9.6, 47.55],
+      [8.9, 47.66], [8.6, 47.78], [7.6, 47.58], [7.55, 48.12], [8.0, 48.95], [7.0, 49.15], [6.35, 49.47], [6.12, 50.12],
+      [6.4, 50.35], [6.02, 50.75], [6.1, 51.22], [5.95, 51.82], [6.8, 51.95], [6.72, 52.45], [7.05, 52.65], [7.2, 53.0],
+    ];
+    const CATS = [
+      ["konv", "Konvektion", /^(CAPE|CIN|LPI|SLI|SI_|DBZ|ECHOTOP)/],
+      ["temp", "Temperatur", /^(T_|TD_|TMAX|TMIN|T$|TD$|RELHUM|QV)/],
+      ["prec", "Niederschlag", /(PREC|RAIN|SNOW|GRAU|HAIL|GSP|CON$|H_SNOW|W_SNOW)/],
+      ["wind", "Wind", /^(U_|V_|VMAX|FF|DD|WIND|GUST|U$|V$)/],
+      ["cloud", "Wolken", /^(CLC|CEILING|HBAS|HTOP|TQ)/],
+      ["rad", "Strahlung", /^(ASW|ASOB|ATHB|ALB|SOB|THB|DURSUN|APAB)/],
+    ];
+    const QT = { position: "Punkt", radius: "Radius", area: "Fläche", cube: "Würfel", trajectory: "Trajektorie", corridor: "Korridor", items: "Items", locations: "Orte", instances: "Instanzen" };
+    const PLACE = "Berlin";
+
+    let D = null, lastW = 0;
+    const st = { coll: null, q: "", cat: "all", sel: null };
+
+    const shortId = (id) => String(id || "").split("@")[0];
+    const okDate = (iso) => typeof iso === "string" && !isNaN(Date.parse(iso));
+    const wday = (iso) => new Date(iso).toLocaleDateString("de-DE", { weekday: "short", timeZone: TZ }).replace(".", "");
+    const wdt = (iso) => (okDate(iso) ? wday(iso) + " " + F.time(iso) : "–");
+    const localHour = F.localHour || ((iso) => Number(new Date(iso).toLocaleString("en-GB", { hour: "2-digit", hour12: false, timeZone: TZ })) % 24);
+    const catOf = (name) => { const c = CATS.find((c) => c[2].test(String(name || "").toUpperCase())); return c ? c[0] : "other"; };
+
+    function parseSteps(t) {
+      // steps may be a count, an array of times, or an ISO 8601 repeating interval "R28/<start>/PT1H"
+      const s = t && t.steps;
+      let count = null, periodH = null;
+      if (isNum(s)) count = s;
+      else if (Array.isArray(s)) {
+        count = s.length;
+        if (s.length > 1 && okDate(s[0]) && okDate(s[1])) periodH = (Date.parse(s[1]) - Date.parse(s[0])) / 3600e3;
+      } else if (typeof s === "string") {
+        const m = /^R(\d+)\/[^/]+\/PT?(?:(\d+)H)?(?:(\d+)M)?/i.exec(s);
+        if (m) { count = Number(m[1]); periodH = (Number(m[2] || 0) + Number(m[3] || 0) / 60) || null; }
+        else if (/^\d+$/.test(s)) count = Number(s);
+      }
+      const a = t && okDate(t.start) ? Date.parse(t.start) : NaN, b = t && okDate(t.end) ? Date.parse(t.end) : NaN;
+      const spanH = isFinite(a) && isFinite(b) ? (b - a) / 3600e3 : null;
+      if (periodH == null && count > 1 && spanH != null) periodH = spanH / (count - 1);
+      return { count, periodH, spanH, a, b };
+    }
+    function cadence(inst) {
+      const t = inst.filter(okDate).map((x) => Date.parse(x)).sort((a, b) => b - a);
+      if (t.length < 2) return null;
+      const d = [];
+      for (let i = 1; i < t.length; i++) d.push((t[i - 1] - t[i]) / 3600e3);
+      d.sort((a, b) => a - b);
+      return d[Math.floor(d.length / 2)];
+    }
+    const everyText = (h) => (h == null ? "–" : h === 1 ? "stündlich" : h < 1 ? "alle " + Math.round(h * 60) + " min" : "alle " + F.num(h, h % 1 ? 1 : 0) + " h");
+    function ago(iso, ref) {
+      const m = Math.round((ref - Date.parse(iso)) / 60000);
+      if (!isFinite(m) || m < 0) return "";
+      if (m < 1) return "gerade eben";
+      if (m < 60) return "vor " + m + " min";
+      if (m < 600) return "vor " + F.num(m / 60, 1) + " h";
+      const h = Math.round(m / 60);
+      return h < 48 ? "vor " + h + " h" : "vor " + Math.round(h / 24) + " Tagen";
+    }
+
+    // ---------- coverage map ----------
+    function mapSVG(bbox) {
+      const V = { x0: -6.5, x1: 24, y0: 41.5, y1: 60 };
+      if (bbox) {
+        V.x0 = Math.min(V.x0, bbox[0] - 1.5); V.x1 = Math.max(V.x1, bbox[2] + 1.5);
+        V.y0 = Math.min(V.y0, bbox[1] - 1.5); V.y1 = Math.max(V.y1, bbox[3] + 1.5);
+      }
+      const k = Math.cos((((V.y0 + V.y1) / 2) * Math.PI) / 180);
+      const w = (V.x1 - V.x0) * k, h = V.y1 - V.y0, S = 150 / Math.max(w, h);
+      const ox = (150 - w * S) / 2, oy = (150 - h * S) / 2;
+      const P = (lon, lat) => [ox + (lon - V.x0) * k * S, oy + (V.y1 - lat) * S];
+      const line = (a, b) => '<line class="grat" x1="' + a[0].toFixed(1) + '" y1="' + a[1].toFixed(1) + '" x2="' + b[0].toFixed(1) + '" y2="' + b[1].toFixed(1) + '"/>';
+      const out = [];
+      for (let lon = -10; lon <= 30; lon += 10) if (lon >= V.x0 && lon <= V.x1) out.push(line(P(lon, V.y0), P(lon, V.y1)));
+      for (let lat = 40; lat <= 60; lat += 5) if (lat >= V.y0 && lat <= V.y1) out.push(line(P(V.x0, lat), P(V.x1, lat)));
+      out.push('<path class="land" d="M' + DE.map((p) => P(p[0], p[1]).map((v) => v.toFixed(1)).join(",")).join("L") + 'Z"/>');
+      if (bbox) {
+        const a = P(bbox[0], bbox[3]), b = P(bbox[2], bbox[1]);
+        out.push('<rect class="bbox" x="' + a[0].toFixed(1) + '" y="' + a[1].toFixed(1) + '" width="' + (b[0] - a[0]).toFixed(1) + '" height="' + (b[1] - a[1]).toFixed(1) + '" rx="3"/>');
+      }
+      return '<svg class="map" viewBox="0 0 150 150" role="img" aria-label="Abdeckungsgebiet">' + out.join("") + "</svg>";
+    }
+
+    // ---------- runs + forecast horizon on one time axis ----------
+    function timelineSVG(c, width) {
+      const inst = (c.instances || []).filter(okDate).sort((a, b) => Date.parse(a) - Date.parse(b));
+      const latest = okDate(c.latest_instance) ? c.latest_instance : inst[inst.length - 1];
+      if (latest && !inst.includes(latest)) inst.push(latest);
+      const hz = parseSteps(c.temporal || {});
+      if (!inst.length && !isFinite(hz.a)) return '<div class="empty">Keine Läufe verfügbar.</div>';
+      const times = inst.map((x) => Date.parse(x));
+      if (isFinite(hz.a)) times.push(hz.a);
+      if (isFinite(hz.b)) times.push(hz.b);
+      const t0 = Math.min.apply(null, times), t1 = Math.max(Math.max.apply(null, times), t0 + 3600e3);
+      const W = Math.max(260, width), H = 54, padL = 6, padR = 6, yA = 31;
+      const X = (t) => padL + ((t - t0) / (t1 - t0)) * (W - padL - padR);
+      const out = ['<line class="axis" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + yA + '" y2="' + yA + '"/>'];
+      // forecast horizon bar with step segments
+      if (isFinite(hz.a) && isFinite(hz.b) && hz.b > hz.a) {
+        const xa = X(hz.a), xb = X(hz.b), n = Math.max(1, Math.min(200, hz.count || Math.round(hz.spanH) || 1));
+        const cw = (xb - xa) / n, gap = cw > 4 ? 1.2 : 0;
+        for (let i = 0; i < n; i++) out.push('<rect class="hz" x="' + (xa + i * cw + gap / 2).toFixed(1) + '" y="' + (yA - 5) + '" width="' + Math.max(0.6, cw - gap).toFixed(1) + '" height="10" rx="1.5"/>');
+        out.push('<text class="hz-l" x="' + xb.toFixed(1) + '" y="' + (yA - 12) + '" text-anchor="end">Vorhersage +' + F.num(hz.spanH) + " h →</text>");
+      }
+      // run ticks
+      inst.forEach((iso) => {
+        if (iso === latest) return;
+        const x = X(Date.parse(iso));
+        out.push('<line class="tick" x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + (yA - 6) + '" y2="' + (yA + 6) + '"><title>Lauf ' + esc(wdt(iso)) + "</title></line>");
+      });
+      // hour labels
+      const pxPerH = (W - padL - padR) / ((t1 - t0) / 3600e3);
+      const every = [1, 2, 3, 6, 12, 24].find((h) => h * pxPerH >= 34) || 24;
+      const xl = latest ? X(Date.parse(latest)) : -999;
+      for (let t = Math.ceil(t0 / 3600e3) * 3600e3; t <= t1; t += 3600e3) {
+        const iso = new Date(t).toISOString(), lh = localHour(iso), x = X(t);
+        if (lh % every || Math.abs(x - xl) < 26 || x < padL + 8 || x > W - padR - 8) continue;
+        out.push('<text x="' + x.toFixed(1) + '" y="' + (yA + 20) + '" text-anchor="middle"' + (lh === 0 ? ' style="font-weight:700;fill:var(--ink-2)"' : "") + ">" + (lh === 0 ? esc(wday(iso)) : F.time(iso).slice(0, 2)) + "</text>");
+      }
+      if (latest) {
+        const anchor = xl > W * 0.6 ? "end" : xl < W * 0.25 ? "start" : "middle";
+        out.push('<circle cx="' + xl.toFixed(1) + '" cy="' + yA + '" r="6.5" fill="var(--now, var(--dwd-lime))" stroke="var(--card)" stroke-width="3"><title>Aktuellster Lauf ' + esc(wdt(latest)) + "</title></circle>");
+        out.push('<text class="now-l" x="' + (anchor === "end" ? xl - 10 : anchor === "start" ? xl + 10 : xl).toFixed(1) + '" y="' + (yA - 12) + '" text-anchor="' + anchor + '">Aktuellster Lauf</text>');
+        out.push('<text x="' + xl.toFixed(1) + '" y="' + (yA + 20) + '" text-anchor="middle" style="fill:var(--lime-ink);font-weight:700">' + F.time(latest) + "</text>");
+      }
+      return '<svg class="tl" viewBox="0 0 ' + W + " " + H + '" height="' + H + '" role="img" aria-label="Modellläufe und Vorhersagehorizont">' + out.join("") + "</svg>";
+    }
+
+    // ---------- parameter table ----------
+    function hl(text) {
+      const s = esc(text);
+      const q = st.q.trim();
+      if (!q) return s;
+      const re = new RegExp("(" + esc(q).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "ig");
+      // only replace outside of entities
+      return s.split(/(&[a-z#0-9]+;)/i).map((part) => (/^&[a-z#0-9]+;$/i.test(part) ? part : part.replace(re, "<mark>$1</mark>"))).join("");
+    }
+    function tableBody(c) {
+      const ps = (c.parameters || []).filter((p) => p && p.name);
+      const q = st.q.trim().toLowerCase();
+      const rows = ps.filter((p) => (st.cat === "all" || catOf(p.name) === st.cat) &&
+        (!q || [p.name, p.label, p.unit].some((v) => String(v || "").toLowerCase().includes(q))));
+      if (!rows.length) return { html: '<tr><td colspan="4"><div class="empty">' + (ps.length ? "Kein Parameter passt zu „" + esc(st.q) + "“." : "Keine Parameter gemeldet.") + "</div></td></tr>", n: 0, total: ps.length };
+      const html = rows.map((p) => {
+        const on = st.sel === p.name;
+        const narrow = app.classList.contains("narrow");
+        let r = '<tr class="p' + (on ? " sel" : "") + '" data-name="' + esc(p.name) + '" tabindex="0" aria-expanded="' + on + '">' +
+          (narrow
+            ? '<td colspan="2"><span class="mono nm">' + hl(p.name) + '</span><div class="lb">' + hl(p.label || "–") + "</div></td>"
+            : '<td class="n"><span class="mono">' + hl(p.name) + "</span></td><td>" + hl(p.label || "–") + "</td>") +
+          '<td class="u">' + esc(p.unit || "") + "</td>" +
+          '<td class="go">' + DWD.icon("chat", 14) + "</td></tr>";
+        if (on) r += '<tr class="ask"><td colspan="4"><div class="askrow"><span>Was bedeutet <b class="mono">' + esc(p.name) + "</b> – und wie sieht es gerade in " + PLACE + " aus?</span>" +
+          '<button class="dwd-btn" type="button" data-ask="' + esc(p.name) + '">' + DWD.icon("chat", 14) + "Im Chat erklären</button></div></td></tr>";
+        return r;
+      }).join("");
+      return { html, n: rows.length, total: ps.length };
+    }
+    const countText = (t) => (t.n === t.total ? t.total + " Parameter" : t.n + " von " + t.total + " Parametern");
+    function refreshTable() {
+      const c = current();
+      const body = app.querySelector("#tbody"), cnt = app.querySelector("#pcount");
+      if (!c || !body) return;
+      const t = tableBody(c);
+      body.innerHTML = t.html;
+      if (cnt) cnt.textContent = t.n === t.total ? "" : t.n + " / " + t.total;
+      DWD.resize();
+    }
+
+    function revealCat() {
+      const box = app.querySelector(".cats"), b = box && box.querySelector('[aria-pressed="true"]');
+      if (!b) return;
+      const fade = () => box.classList.toggle("more", box.scrollLeft + box.clientWidth < box.scrollWidth - 4);
+      if (!box._f) { box._f = 1; box.addEventListener("scroll", fade, { passive: true }); }
+      requestAnimationFrame(fade);
+      const l = b.offsetLeft, r = l + b.offsetWidth;
+      if (l < box.scrollLeft + 8 || r > box.scrollLeft + box.clientWidth * 0.82) box.scrollLeft = Math.max(0, l - (box.clientWidth - b.offsetWidth) / 2);
+    }
+    function collections() { return (D && Array.isArray(D.collections) ? D.collections : []).filter((c) => c && typeof c === "object"); }
+    function current() { const cs = collections(); return cs.find((c) => c.id === st.coll) || cs[0] || null; }
+
+    function render(data) {
+      if (!data) return;
+      if (data !== D) st.sel = null;
+      D = data;
+      const cs = collections();
+      if (!cs.find((c) => c.id === st.coll)) st.coll = cs[0] ? cs[0].id : null;
+      const width = app.clientWidth || 600;
+      lastW = width;
+      const narrow = width < 520;
+      app.classList.toggle("narrow", narrow);
+      const ref = Date.parse(data.generated_at) || Date.now();
+      const c = current();
+
+      const tabs = cs.length > 1 ? '<div class="tabs"><div class="dwd-seg" role="tablist">' + cs.map((x) =>
+        '<button type="button" role="tab" data-coll="' + esc(x.id) + '" aria-pressed="' + (x === c) + '" aria-selected="' + (x === c) + '" title="' + esc(x.title || x.id) + '">' + esc(shortId(x.id) || x.title || "–") + "</button>").join("") + "</div></div>" : "";
+      const header = '<div class="dwd-header"><div class="dwd-badge-icon">' + DWD.icon("layers", 18) + "</div>" +
+        '<div class="hd-text"><div class="dwd-title">Datenquellen</div>' +
+        '<div class="dwd-sub">DWD Open Data · EDR · ' + cs.length + (cs.length === 1 ? " Kollektion" : " Kollektionen") + "</div></div>" + tabs + "</div>";
+      const footer = '<div class="dwd-footer"><span class="foot-l"><span class="dwd-logo">DWD</span><span>' + esc(data.source || "Deutscher Wetterdienst") + "</span></span>" +
+        "<span>Stand " + esc(wdt(data.generated_at)) + "</span></div>";
+      if (!c) { app.innerHTML = header + '<div class="dwd-error">Keine Kollektionen gefunden.</div>' + footer; return; }
+
+      const inst = (Array.isArray(c.instances) ? c.instances : []).filter(okDate);
+      const latest = okDate(c.latest_instance) ? c.latest_instance : inst.slice().sort().pop();
+      const cad = cadence(inst);
+      const ps = parseSteps(c.temporal || {});
+      const bb = Array.isArray(c.bbox) && c.bbox.length === 4 && c.bbox.every(isNum) ? c.bbox : null;
+      const bbText = bb ? F.num(bb[0], 1) + "…" + F.num(bb[2], 1) + "° O · " + F.num(bb[1], 1) + "…" + F.num(bb[3], 1) + "° N" : "Gebiet unbekannt";
+      const qts = (Array.isArray(c.query_types) ? c.query_types : []).map((q) => '<span class="dwd-chip" title="' + esc(q) + '">' + esc(QT[q] || q) + "</span>").join("");
+
+      const facts = '<div class="facts">' +
+        '<div class="fact"><span>Aktuellster Lauf</span><b class="lime">' + esc(latest ? wdt(latest) : "–") + (latest && ago(latest, ref) ? "<small>" + esc(ago(latest, ref)) + "</small>" : "") + "</b></div>" +
+        '<div class="fact"><span>Vorhersage</span><b>' + (ps.spanH != null ? "+" + F.num(ps.spanH) + " h" : "–") + (ps.count ? "<small>" + ps.count + " Schritte</small>" : "") + "</b></div>" +
+        '<div class="fact"><span>Läufe</span><b>' + inst.length + "<small>" + esc(everyText(cad)) + "</small></b></div></div>";
+      const qtRow = '<div class="qt">' + (qts ? '<span class="lab">Abfragen</span>' + qts : "") + '<span class="bbt" title="Abdeckung (Bounding Box)">' + bbText + "</span></div>";
+      const top = '<div class="top"><div class="mapcol">' + mapSVG(bb) + "</div>" +
+        '<div><div class="c-title"><h2>' + esc(c.title || shortId(c.id) || "–") + "</h2>" + (c.id ? '<span class="mono idchip">' + esc(c.id) + "</span>" : "") + "</div>" +
+        '<p class="desc" title="' + esc(c.description || "") + '">' + esc(c.description || "Keine Beschreibung verfügbar.") + "</p>" +
+        (narrow ? "" : facts + qtRow) + "</div></div>" + (narrow ? '<div class="facts-row">' + facts + qtRow + "</div>" : "");
+
+      const runs = '<div class="sec tl-sec">' + timelineSVG(c, width) + "</div>";
+
+      const params = (c.parameters || []).filter((p) => p && p.name);
+      const counts = {};
+      params.forEach((p) => { const k = catOf(p.name); counts[k] = (counts[k] || 0) + 1; });
+      if (st.cat !== "all" && !counts[st.cat]) st.cat = "all";
+      const catDefs = [["all", "Alle"]].concat(CATS.map((x) => [x[0], x[1]])).concat([["other", "Sonstige"]]).filter((x) => x[0] === "all" || counts[x[0]]);
+      const cats = '<div class="cats" role="group" aria-label="Kategorie">' + catDefs.map((x) => '<button type="button" data-cat="' + x[0] + '" aria-pressed="' + (st.cat === x[0]) + '">' + x[1] + (x[0] === "all" ? "" : "<small>" + counts[x[0]] + "</small>") + "</button>").join("") + "</div>";
+      const t = tableBody(c);
+      const paramsSec = '<div class="sec">' +
+        '<div class="ptools"><label class="search"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>' +
+        '<input id="q" type="search" placeholder="' + t.total + ' Parameter durchsuchen" value="' + esc(st.q) + '" aria-label="Parameter suchen"/></label>' + cats + '<span class="sec-s" id="pcount"></span></div>' +
+        '<div class="tbl-wrap"><table><thead><tr>' + (narrow ? '<th colspan="2">Parameter</th>' : "<th>Name</th><th>Bezeichnung</th>") + '<th style="text-align:right">Einheit</th><th></th></tr></thead><tbody id="tbody">' + t.html + "</tbody></table></div></div>";
+
+      const qFocused = document.activeElement && document.activeElement.id === "q";
+      const old = app.querySelector(".tbl-wrap");
+      const scrollTop = old ? old.scrollTop : 0;
+      app.innerHTML = header + top + runs + paramsSec + footer;
+      const tw = app.querySelector(".tbl-wrap");
+      if (tw) tw.scrollTop = scrollTop;
+
+      app.querySelectorAll("[data-coll]").forEach((b) => b.addEventListener("click", () => {
+        if (st.coll === b.dataset.coll) return;
+        st.coll = b.dataset.coll; st.sel = null;
+        const w = app.querySelector(".tbl-wrap"); if (w) w.scrollTop = 0;
+        render(D);
+        const nw = app.querySelector(".tbl-wrap"); if (nw) nw.scrollTop = 0;
+      }));
+      app.querySelectorAll("[data-cat]").forEach((b) => b.addEventListener("click", () => {
+        st.cat = b.dataset.cat;
+        app.querySelectorAll("[data-cat]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.cat === st.cat)));
+        revealCat();
+        refreshTable();
+      }));
+      revealCat();
+      const qi = app.querySelector("#q");
+      qi.addEventListener("input", () => { st.q = qi.value; refreshTable(); });
+      if (qFocused) { qi.focus(); qi.setSelectionRange(qi.value.length, qi.value.length); }
+      const tb = app.querySelector("#tbody");
+      const toggle = (tr) => { const n = tr.dataset.name; st.sel = st.sel === n ? null : n; refreshTable(); };
+      tb.addEventListener("click", (ev) => {
+        const ask = ev.target.closest("[data-ask]");
+        if (ask) { DWD.sendMessage("Erkläre den DWD-Parameter " + ask.dataset.ask + " und zeig ihn mir für " + PLACE).catch(() => {}); return; }
+        const tr = ev.target.closest("tr.p");
+        if (tr) toggle(tr);
+      });
+      tb.addEventListener("keydown", (ev) => {
+        const tr = ev.target.closest && ev.target.closest("tr.p");
+        if (tr && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); toggle(tr); }
+      });
+      DWD.resize();
+    }
+
+    DWD.onData((data) => render(data));
+    let rq = 0;
+    new ResizeObserver(() => {
+      const w = app.clientWidth;
+      if (!D || Math.abs(w - lastW) < 2) return;
+      cancelAnimationFrame(rq);
+      rq = requestAnimationFrame(() => render(D));
+    }).observe(app);
+  })();
+  </script>
+</body>
+</html>

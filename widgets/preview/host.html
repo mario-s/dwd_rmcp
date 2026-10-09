@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="de" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DWD Widget Preview Host</title>
+  <style>
+    /* Claude-like chat chrome (neutral warm grey). Not pixel-exact, just close enough to judge widgets in context. */
+    :root {
+      --page: #faf9f5;
+      --bubble: #f0eee6;
+      --text: #141413;
+      --text-2: #3d3d3a;
+      --text-3: #73726c;
+      --border: rgba(31, 30, 29, 0.12);
+      --chip: #ffffff;
+      --accent: #c96442;
+      --danger: #b42318;
+      --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      --serif: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+      --mono: ui-monospace, "SF Mono", Menlo, monospace;
+      color-scheme: light;
+    }
+    :root[data-theme="dark"] {
+      --page: #262624;
+      --bubble: #141413;
+      --text: #faf9f5;
+      --text-2: #e5e3dc;
+      --text-3: #9c9a92;
+      --border: rgba(250, 249, 245, 0.12);
+      --chip: #30302e;
+      --accent: #d97757;
+      --danger: #f97066;
+      color-scheme: dark;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--page); color: var(--text); font-family: var(--sans); }
+    body { min-height: 100vh; }
+
+    /* ---- chat frame ---- */
+    .chat {
+      --col: 720px;
+      width: calc(var(--col) + 64px);
+      margin: 0 auto;
+      padding: 28px 32px 32px;
+      background: var(--page);
+    }
+    .turn + .turn { margin-top: 22px; }
+    .turn.user { display: flex; justify-content: flex-end; }
+    .bubble {
+      max-width: 82%;
+      background: var(--bubble);
+      color: var(--text);
+      padding: 10px 16px;
+      border-radius: 18px;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+    .toolcall {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 11px 5px 9px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--chip);
+      color: var(--text-3);
+      font-size: 12.5px;
+    }
+    .toolcall svg { color: var(--text-3); }
+    .toolcall code { font-family: var(--mono); font-size: 12px; color: var(--text-2); }
+    .toolcall .chev { opacity: 0.6; }
+    .say {
+      margin: 0 0 14px;
+      font-family: var(--serif);
+      font-size: 16.5px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+    .app { width: 100%; }
+    .app.bordered { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    .app iframe {
+      display: block;
+      width: 100%;
+      height: 160px;
+      border: 0;
+      background: transparent;
+      color-scheme: inherit;
+      transition: height 0.12s ease-out;
+    }
+    .capture .app iframe { transition: none; }
+
+    /* ---- interactive dev chrome (serve.mjs only) ---- */
+    .devbar {
+      position: sticky; top: 0; z-index: 5;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+      padding: 10px 16px;
+      background: var(--chip);
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .devbar[hidden] { display: none; }
+    .devbar select, .devbar button {
+      font: inherit; color: var(--text); background: var(--page);
+      border: 1px solid var(--border); border-radius: 8px; padding: 5px 9px; cursor: pointer;
+    }
+    .devbar button[aria-pressed="true"] { background: var(--text); color: var(--page); }
+    .devbar .grow { flex: 1; }
+    .badge { font-family: var(--mono); font-size: 11.5px; padding: 3px 8px; border-radius: 99px; border: 1px solid var(--border); color: var(--text-3); }
+    .badge.err { color: #fff; background: var(--danger); border-color: var(--danger); }
+    .layout { display: flex; align-items: flex-start; gap: 0; }
+    .layout > main { flex: 1; min-width: 0; overflow-x: auto; }
+    .log {
+      width: 380px; flex: none; align-self: stretch;
+      border-left: 1px solid var(--border);
+      font-family: var(--mono); font-size: 11.5px; line-height: 1.45;
+      padding: 8px 10px; max-height: calc(100vh - 52px); overflow: auto; position: sticky; top: 52px;
+      color: var(--text-2);
+    }
+    .log[hidden] { display: none; }
+    .log .e { padding: 3px 0; border-bottom: 1px dashed var(--border); white-space: pre-wrap; word-break: break-word; }
+    .log .e.err { color: var(--danger); }
+    .log .e.warn { color: #b54708; }
+    .log .dir { color: var(--text-3); }
+    .notice { max-width: 720px; margin: 40px auto; color: var(--text-3); font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="devbar" id="devbar" hidden>
+    <strong>DWD Preview</strong>
+    <select id="pick" aria-label="Szenario"></select>
+    <span>
+      <button id="th-light" aria-pressed="true">Hell</button>
+      <button id="th-dark" aria-pressed="false">Dunkel</button>
+    </span>
+    <select id="width" aria-label="Breite">
+      <option value="360">360 px</option>
+      <option value="480">480 px</option>
+      <option value="600">600 px</option>
+      <option value="720" selected>720 px</option>
+      <option value="760">760 px</option>
+    </select>
+    <button id="reload" title="Widget-HTML neu laden (R)">Neu laden</button>
+    <button id="toggle-log" aria-pressed="true">Log</button>
+    <span class="grow"></span>
+    <span class="badge" id="errs" hidden></span>
+    <span class="badge" id="mode"></span>
+  </div>
+  <div class="layout">
+    <main id="stage"></main>
+    <aside class="log" id="log" hidden></aside>
+  </div>
+  <script src="host.js"></script>
+</body>
+</html>

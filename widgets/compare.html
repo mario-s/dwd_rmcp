@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DWD · Ortsvergleich</title>
+  <!--DWD:SHARED-->
+  <style>
+    #app { container-type: inline-size; }
+    .cp-head { display: flex; align-items: center; justify-content: space-between; gap: 10px 12px; flex-wrap: wrap; margin-bottom: 12px; }
+    .cp-head .dwd-header { margin: 0; min-width: 0; }
+    .cp-head .dwd-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cp-seg.dwd-seg button { padding: 7px 11px; }
+    .cp-seg.dwd-seg button[aria-pressed="true"] { background: var(--dwd-blue); color: #fff; }
+
+    /* ranking tiles */
+    .cp-rank { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 4px; }
+    .cp-tile {
+      display: flex; align-items: center; gap: 10px; min-width: 0;
+      padding: 7px 11px; border-radius: 12px; background: var(--card-2); border: 1px solid var(--line);
+    }
+    .cp-tile .ic { width: 30px; height: 30px; flex: none; border-radius: 9px; display: grid; place-items: center; }
+    .cp-tile.warm .ic { background: var(--temp-soft); color: var(--temp); }
+    .cp-tile.dry .ic { background: var(--dwd-lime-soft); color: var(--lime-ink, var(--ok)); }
+    .cp-tile.windy .ic { background: rgba(26, 163, 154, 0.14); color: var(--wind); }
+    .cp-tile .tx { min-width: 0; line-height: 1.2; }
+    .cp-tile .ey { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cp-tile .nm { font-size: 13.5px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cp-tile .vl { font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+    .cp-tile .vl b { font-weight: 650; color: var(--ink); }
+
+    /* rows */
+    .cp-rows { position: relative; }
+    .cp-row, .cp-axis {
+      display: grid; grid-template-columns: minmax(128px, 168px) 128px minmax(0, 1fr); gap: 14px; align-items: center;
+    }
+    .cp-row { padding: 7px 0; border-bottom: 1px solid var(--line); }
+    .cp-who .now .mini { display: none; color: var(--accent); align-self: center; }
+    .cp-row:last-of-type { border-bottom: 0; }
+    .cp-who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .cp-who .wx { width: 40px; height: 40px; flex: none; border-radius: 11px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+    .cp-who .tx { min-width: 0; line-height: 1.2; }
+    .cp-who .nm { font-size: 14px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cp-who .now { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+    .cp-who .now b { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+    .cp-who .now span { font-size: 11.5px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; }
+
+    .cp-stats { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--ink-3); }
+    .cp-stat { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .cp-stat .dwd-icon { color: var(--ink-3); }
+    .cp-stat b { color: var(--ink-2); font-weight: 600; }
+    .cp-stat.hl b { color: var(--ink); font-weight: 700; }
+    .cp-stat.hl.t .dwd-icon { color: var(--temp); }
+    .cp-stat.hl.p .dwd-icon { color: var(--rain); }
+    .cp-stat.hl.w .dwd-icon { color: var(--wind); }
+    .cp-stat .best { font-size: 9.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--lime-ink, var(--ok)); background: var(--dwd-lime-soft); border-radius: 5px; padding: 1px 5px; }
+
+    .cp-spark { position: relative; height: 52px; min-width: 0; cursor: crosshair; touch-action: pan-y; }
+    .cp-spark svg { position: absolute; inset: 0; overflow: visible; display: block; }
+    .cp-axis { padding-top: 2px; }
+    .cp-axis .cp-spark { height: 18px; cursor: default; }
+
+    svg .night { fill: var(--ink); fill-opacity: 0.045; }
+    :root[data-theme="dark"] svg .night { fill-opacity: 0.08; }
+    svg .grid { stroke: var(--line); stroke-width: 1; }
+    svg .gl { font-size: 9px; fill: var(--ink-3); }
+    svg .ln-t { fill: none; stroke: var(--temp); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+    svg .ln-w { fill: none; stroke: var(--wind); stroke-width: 1.8; stroke-linejoin: round; }
+    svg .ln-g { fill: none; stroke: var(--gust); stroke-width: 1.4; stroke-dasharray: 3 3; stroke-linejoin: round; }
+    svg .bar-p { fill: var(--rain); }
+    svg .bar-p.micro { fill-opacity: 0.55; }
+    svg .mx { font-size: 10px; font-weight: 700; fill: var(--ink-2); paint-order: stroke; stroke: var(--card); stroke-width: 3px; }
+    .cp-rows.hovering svg .mxg { display: none; }
+    .cp-rows.compact .cp-row { padding: 6px 0; }
+    .cp-rows.compact .cp-row .cp-spark { height: 44px; }
+    .cp-rows.compact .cp-who .wx { width: 32px; height: 32px; border-radius: 9px; }
+    .cp-rows.compact .cp-who .now b { font-size: 17px; }
+    .cp-rows.compact .cp-stats .cp-stat:not(.hl) { display: none; }
+    svg .nowl { stroke: var(--now, var(--dwd-lime)); stroke-width: 2; }
+    svg .tick { font-size: 10px; fill: var(--ink-3); }
+    svg .tick.day { fill: var(--ink-2); font-weight: 700; }
+    svg .cur line { stroke: var(--ink); stroke-opacity: 0.55; stroke-width: 1; }
+    svg .cur circle { stroke: var(--card); stroke-width: 2; }
+    svg .cur rect { fill: var(--ink); }
+    svg .cur text { font-size: 10.5px; font-weight: 700; fill: var(--card); }
+
+    .cp-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11px; color: var(--ink-3); margin-top: 6px; }
+    .cp-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .cp-legend i { display: inline-block; width: 14px; height: 0; border-top: 2px solid; border-radius: 1px; }
+    .cp-legend i.bar { width: 7px; height: 10px; border: 0; border-radius: 2px; }
+    .cp-legend i.dash { border-top-style: dashed; }
+    .cp-legend i.night { width: 12px; height: 10px; border: 1px solid var(--line); background: var(--card-2); border-radius: 2px; }
+
+    @container (max-width: 560px) {
+      .cp-head { flex-direction: column; align-items: stretch; }
+      .cp-seg.dwd-seg { align-self: flex-start; }
+      .cp-row, .cp-axis { grid-template-columns: 104px minmax(0, 1fr); gap: 2px 10px; }
+      .cp-row { grid-template-areas: "who spark" "stats spark"; align-items: start; padding: 8px 0; }
+      .cp-row .cp-who { grid-area: who; }
+      .cp-row .cp-stats { grid-area: stats; }
+      .cp-row .cp-spark { grid-area: spark; height: 52px; margin-top: 2px; }
+      .cp-who .wx { display: none; }
+      .cp-who .nm { font-size: 13.5px; }
+      .cp-who .now { gap: 4px; }
+      .cp-who .now .mini { display: inline-flex; }
+      .cp-who .now b { font-size: 17px; }
+      .cp-who .now span { display: none; }
+      .cp-stats .cp-stat:not(.hl) { display: none; }
+      .cp-stat .best { display: none; }
+      .cp-axis > :nth-child(2) { display: none; }
+    }
+    @container (max-width: 440px) {
+      .cp-rank { gap: 6px; }
+      .cp-tile { padding: 8px 9px; }
+      .cp-tile .ic { display: none; }
+      .cp-tile .ey .lg { display: none; }
+      .cp-tile .ey { font-size: 9.5px; letter-spacing: 0.02em; }
+      .cp-tile.warm .ey { color: var(--temp); }
+      .cp-tile.dry .ey { color: var(--lime-ink, var(--ok)); }
+      .cp-tile.windy .ey { color: var(--wind); }
+      .cp-tile .nm { font-size: 13px; }
+      .cp-seg.dwd-seg { align-self: stretch; display: flex; }
+      .cp-seg.dwd-seg button { flex: 1; padding: 7px 6px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="dwd-card">
+    <div class="dwd-skeleton">Lade DWD-Daten …</div>
+    <div class="dwd-content" id="app"></div>
+  </div>
+  <script>
+  (function () {
+    "use strict";
+    const app = document.getElementById("app");
+    const F = DWD.fmt;
+    const isNum = (v) => typeof v === "number" && isFinite(v);
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const METRICS = [
+      { key: "t", label: "Temperatur" },
+      { key: "p", label: "Niederschlag" },
+      { key: "w", label: "Wind" },
+    ];
+    const S = { metric: "t", hover: null, lastW: 0 };
+    let D = null, M = null; // payload, model (derived)
+
+    const nums = (a) => a.filter(isNum);
+    const maxOf = (a) => { const n = nums(a); return n.length ? Math.max(...n) : null; };
+    const minOf = (a) => { const n = nums(a); return n.length ? Math.min(...n) : null; };
+    const sumOf = (a) => { const n = nums(a); return n.length ? n.reduce((x, y) => x + y, 0) : null; };
+    function hourLbl(iso) {
+      const h = typeof F.localHour === "function" ? F.localHour(iso) : null;
+      return isNum(h) ? String(h).padStart(2, "0") : String(F.hour(iso)).replace(/\D+/g, "");
+    }
+    const night = (iso) => (typeof F.isNight === "function" ? F.isNight(iso) : (() => { const h = +hourLbl(iso); return h < 7 || h >= 19; })());
+    const wwInfo = (code, iso) => { try { return F.ww(code, iso); } catch (_) { return F.ww(code); } };
+
+    // ---- derive a normalised model from the payload ------------------------
+    function derive(data) {
+      const locs = (Array.isArray(data.locations) ? data.locations : []).filter((l) => l && typeof l === "object").slice(0, 6);
+      const tset = new Set();
+      locs.forEach((l) => (Array.isArray(l.steps) ? l.steps : []).forEach((s) => { if (s && s.time && isFinite(Date.parse(s.time))) tset.add(s.time); }));
+      const times = Array.from(tset).sort((a, b) => Date.parse(a) - Date.parse(b));
+      const idx = new Map(times.map((t, i) => [t, i]));
+      const rows = locs.map((l, k) => {
+        const steps = new Array(times.length).fill(null);
+        (Array.isArray(l.steps) ? l.steps : []).forEach((s) => { if (s && idx.has(s.time)) steps[idx.get(s.time)] = s; });
+        const col = (f) => steps.map((s) => (s && isNum(s[f]) ? s[f] : null));
+        const t = col("t2m_c"), p = col("precip_mm"), w = col("wind_speed_kmh"), g = col("gust_kmh"), c = col("cloud_pct");
+        const sm = l.summary || {};
+        const sum = {
+          tmin: isNum(sm.t_min_c) ? sm.t_min_c : minOf(t),
+          tmax: isNum(sm.t_max_c) ? sm.t_max_c : maxOf(t),
+          psum: isNum(sm.precip_sum_mm) ? sm.precip_sum_mm : sumOf(p),
+          gmax: isNum(sm.gust_max_kmh) ? sm.gust_max_kmh : maxOf(g),
+          cloud: isNum(sm.cloud_mean_pct) ? sm.cloud_mean_pct : (nums(c).length ? sumOf(c) / nums(c).length : null),
+        };
+        const name = l.name || (isNum(l.lat) && isNum(l.lon) ? F.num(l.lat, 2) + "° N, " + F.num(l.lon, 2) + "° O" : "Ort " + (k + 1));
+        return { name, steps, t, p, w, g, sum };
+      });
+      // "now" = step closest to the current time if inside the range, else the first step
+      let nowIdx = 0;
+      const nowMs = Date.now();
+      if (times.length && nowMs >= Date.parse(times[0]) - 1800e3 && nowMs <= Date.parse(times[times.length - 1]) + 1800e3) {
+        let best = Infinity;
+        times.forEach((t, i) => { const d = Math.abs(Date.parse(t) - nowMs); if (d < best) { best = d; nowIdx = i; } });
+      }
+      const inRange = times.length && nowMs >= Date.parse(times[0]) && nowMs <= Date.parse(times[times.length - 1]);
+      return { rows, times, nowIdx, nowMs: inRange ? nowMs : null };
+    }
+
+    function winners() {
+      const pick = (val, better, tie) => {
+        let best = null;
+        M.rows.forEach((r) => {
+          const v = val(r);
+          if (!isNum(v)) return;
+          if (!best || better(v, best.v) || (v === best.v && tie && tie(r, best.r))) best = { r, v };
+        });
+        return best;
+      };
+      return {
+        warm: pick((r) => r.sum.tmax, (a, b) => a > b),
+        dry: pick((r) => r.sum.psum, (a, b) => a < b, (r, b) => (r.sum.cloud ?? 999) < (b.sum.cloud ?? 999)),
+        windy: pick((r) => r.sum.gmax, (a, b) => a > b),
+      };
+    }
+
+    // ---- scales per metric -------------------------------------------------
+    function niceTicks(lo, hi, count) {
+      const span = hi - lo || 1;
+      const raw = span / count;
+      const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+      const st = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw) || raw;
+      const out = [];
+      for (let v = Math.ceil(lo / st) * st; v <= hi + 1e-9; v += st) out.push(+v.toFixed(6));
+      return out;
+    }
+    function scaleFor(metric) {
+      const all = (f) => M.rows.flatMap((r) => r[f]);
+      if (metric === "t") {
+        let lo = minOf(all("t")), hi = maxOf(all("t"));
+        if (lo == null) { lo = 0; hi = 10; }
+        if (hi - lo < 4) { const m = (hi + lo) / 2; lo = m - 2; hi = m + 2; }
+        const pad = (hi - lo) * 0.12;
+        return { lo: lo - pad, hi: hi + pad, ticks: niceTicks(lo, hi, 2), pmax: Math.max(2, maxOf(all("p")) || 0) };
+      }
+      if (metric === "p") {
+        const hi = Math.max(1, maxOf(all("p")) || 0);
+        return { lo: 0, hi: hi * 1.08, ticks: niceTicks(0, hi, 2).filter((v) => v > 0) };
+      }
+      const hi = Math.max(20, maxOf(all("g")) || 0, maxOf(all("w")) || 0);
+      return { lo: 0, hi: hi * 1.08, ticks: niceTicks(0, hi, 2).filter((v) => v > 0) };
+    }
+    function fmtMetric(metric, r, i) {
+      if (metric === "t") return isNum(r.t[i]) ? F.num(r.t[i], 1) + "°" : "–";
+      if (metric === "p") return isNum(r.p[i]) ? F.num(r.p[i], 1) + " mm" : "–";
+      const w = r.w[i], g = r.g[i];
+      if (!isNum(w) && !isNum(g)) return "–";
+      return (isNum(w) ? F.num(w, 0) : "–") + (isNum(g) ? " / " + F.num(g, 0) : "") + " km/h";
+    }
+
+    // ---- render ---------------------------------------------------------------
+    function render() {
+      if (!D) return;
+      M = derive(D);
+      S.lastW = app.clientWidth;
+      const n = M.times.length;
+      const W = winners();
+      const model = D.model || {};
+      const coll = String(model.collection_id || "").split("@")[0];
+      const hours = n > 1 ? Math.round((Date.parse(M.times[n - 1]) - Date.parse(M.times[0])) / 3600e3) : 0;
+      const sub = [M.rows.length + " Orte", hours ? hours + " Std. ab " + F.day(M.times[0]).split(",")[0] + " " + F.time(M.times[0]) : null, coll || null].filter(Boolean).join(" · ");
+
+      const tile = (cls, icon, ey, w, val) => `
+        <div class="cp-tile ${cls}"><span class="ic">${DWD.icon(icon, 17)}</span>
+          <div class="tx"><div class="ey">${ey}</div><div class="nm">${w ? F.esc(w.r.name) : "–"}</div><div class="vl">${w ? val(w.v) : "&nbsp;"}</div></div></div>`;
+
+      const rowsHtml = M.rows.map((r, k) => {
+        const s = r.steps[M.nowIdx] || r.steps.find(Boolean) || {};
+        const info = wwInfo(s.ww, s.time);
+        const best = (w) => w && w.r === r && M.rows.length > 1;
+        return `
+          <div class="cp-row" data-k="${k}">
+            <div class="cp-who">
+              <span class="wx" title="${F.esc(info.label)}">${DWD.icon(info.icon, 24)}</span>
+              <div class="tx"><div class="nm">${F.esc(r.name)}</div>
+                <div class="now"><i class="mini">${DWD.icon(info.icon, 16)}</i><b>${F.esc(F.temp(s.t2m_c))}</b><span>${F.esc(info.label)}</span></div></div>
+            </div>
+            <div class="cp-stats">
+              <div class="cp-stat t ${S.metric === "t" ? "hl" : ""}">${DWD.icon("thermo", 14)}<b>${F.esc(F.temp(r.sum.tmin))} / ${F.esc(F.temp(r.sum.tmax))}</b>${best(W.warm) ? '<span class="best">Top</span>' : ""}</div>
+              <div class="cp-stat p ${S.metric === "p" ? "hl" : ""}">${DWD.icon("drop", 14)}<b>${F.esc(F.mm(r.sum.psum))}</b>${best(W.dry) ? '<span class="best">Top</span>' : ""}</div>
+              <div class="cp-stat w ${S.metric === "w" ? "hl" : ""}">${DWD.icon("wind", 14)}<b>${F.esc(F.kmh(r.sum.gmax))}</b>${best(W.windy) ? '<span class="best">Top</span>' : ""}</div>
+            </div>
+            <div class="cp-spark" data-k="${k}"></div>
+          </div>`;
+      }).join("");
+
+      const legend = S.metric === "t"
+        ? `<span><i style="border-color:var(--temp)"></i>Temperatur (gemeinsame Skala)</span><span><i class="bar" style="background:var(--rain);opacity:.55"></i>Niederschlag</span>`
+        : S.metric === "p"
+          ? `<span><i class="bar" style="background:var(--rain)"></i>Niederschlag pro Stunde (gemeinsame Skala)</span>`
+          : `<span><i style="border-color:var(--wind)"></i>Wind</span><span><i class="dash" style="border-color:var(--gust)"></i>Böen (km/h, gemeinsame Skala)</span>`;
+
+      app.innerHTML = `
+        <div class="cp-head">
+          <div class="dwd-header">
+            <span class="dwd-badge-icon">${DWD.icon("pin", 18)}</span>
+            <div style="min-width:0"><div class="dwd-title">Ortsvergleich</div><div class="dwd-sub">${F.esc(sub)}</div></div>
+          </div>
+          <div class="dwd-seg cp-seg" role="group" aria-label="Messgröße">
+            ${METRICS.map((m) => `<button type="button" data-m="${m.key}" aria-pressed="${S.metric === m.key}">${m.label}</button>`).join("")}
+          </div>
+        </div>
+        ${M.rows.length ? `
+        <div class="cp-rank">
+          ${tile("warm", "thermo", "Wärmster<span class='lg'> Ort</span>", W.warm, (v) => `<b>${F.esc(F.temp(v))}</b> max`)}
+          ${tile("dry", "sun", "Trockenster<span class='lg'> Ort</span>", W.dry, (v) => `<b>${F.esc(F.mm(v))}</b> gesamt`)}
+          ${tile("windy", "wind", "Windigster<span class='lg'> Ort</span>", W.windy, (v) => `<b>${F.esc(F.kmh(v))}</b> Böen`)}
+        </div>
+        <div class="cp-rows${M.rows.length >= 5 ? " compact" : ""}">${rowsHtml}
+          <div class="cp-axis"><div></div><div></div><div class="cp-spark cp-axis-spark"></div></div>
+        </div>
+        <div class="cp-legend">${legend}<span><i class="night"></i>Nacht</span></div>` : `<div class="dwd-error">Keine Orte im Ergebnis.</div>`}
+        <div class="dwd-footer">
+          <span style="display:inline-flex;align-items:center;gap:6px"><span class="dwd-logo">DWD</span>${F.esc(D.source || "Deutscher Wetterdienst")}</span>
+          <span style="white-space:nowrap">${model.reference_time ? "Lauf " + F.esc(F.day(model.reference_time).split(",")[0] + " " + F.time(model.reference_time)) : ""}</span>
+        </div>`;
+
+      app.querySelectorAll(".cp-seg button").forEach((b) => b.addEventListener("click", () => {
+        if (S.metric === b.dataset.m) return;
+        S.metric = b.dataset.m;
+        render();
+      }));
+      drawSparks();
+      bindHover();
+      DWD.resize();
+    }
+
+    function drawSparks() {
+      const n = M.times.length;
+      const sparks = Array.from(app.querySelectorAll(".cp-row .cp-spark"));
+      if (!sparks.length) return;
+      const SW = Math.max(80, sparks[0].clientWidth);
+      const SH = sparks[0].clientHeight || 58;
+      const padL = 2, padR = 26, top = 8, bot = 3;
+      const X = (i) => padL + (n > 1 ? (i * (SW - padL - padR)) / (n - 1) : (SW - padL - padR) / 2);
+      const sc = scaleFor(S.metric);
+      const Y = (v) => top + (1 - (v - sc.lo) / (sc.hi - sc.lo || 1)) * (SH - top - bot);
+      const step = n > 1 ? (SW - padL - padR) / (n - 1) : SW;
+      M.geo = { SW, SH, X, Y, n, step, sc };
+
+      // night bands + grid shared by all rows
+      let nightBands = "";
+      for (let i = 0; i < n; i++) {
+        if (!night(M.times[i])) continue;
+        let j = i;
+        while (j + 1 < n && night(M.times[j + 1])) j++;
+        const x0 = Math.max(0, X(i) - step / 2), x1 = Math.min(SW - padR + 4, X(j) + step / 2);
+        nightBands += `<rect class="night" x="${x0.toFixed(1)}" y="0" width="${(x1 - x0).toFixed(1)}" height="${SH}" rx="3"/>`;
+        i = j;
+      }
+      const unit = S.metric === "t" ? "°" : S.metric === "p" ? " mm" : "";
+      const grid = sc.ticks.map((v) => {
+        const y = Y(v).toFixed(1);
+        return `<line class="grid" x1="0" x2="${SW - padR + 4}" y1="${y}" y2="${y}"/><text class="gl" x="${SW}" y="${(Y(v) + 3).toFixed(1)}" text-anchor="end">${F.num(v, Math.abs(v - Math.round(v)) > 1e-6 ? 1 : 0)}${unit}</text>`;
+      }).join("");
+      const nowX = M.nowMs != null && n > 1
+        ? X(0) + ((M.nowMs - Date.parse(M.times[0])) / (Date.parse(M.times[n - 1]) - Date.parse(M.times[0]))) * (X(n - 1) - X(0))
+        : null;
+      const nowLine = nowX != null ? `<line class="nowl" x1="${nowX.toFixed(1)}" x2="${nowX.toFixed(1)}" y1="0" y2="${SH}"/>` : "";
+
+      const path = (vals, yf) => {
+        let d = "", pen = false;
+        vals.forEach((v, i) => {
+          if (!isNum(v)) { pen = false; return; }
+          d += (pen ? "L" : "M") + X(i).toFixed(1) + "," + yf(v).toFixed(1);
+          pen = true;
+        });
+        return d;
+      };
+      const area = (vals, yf, base) => {
+        // closed polygons for each contiguous run
+        let out = "", run = [];
+        const flush = () => {
+          if (run.length > 1) out += "M" + run.map(([i, v]) => X(i).toFixed(1) + "," + yf(v).toFixed(1)).join("L") + `L${X(run[run.length - 1][0]).toFixed(1)},${base}L${X(run[0][0]).toFixed(1)},${base}Z`;
+          run = [];
+        };
+        vals.forEach((v, i) => { if (isNum(v)) run.push([i, v]); else flush(); });
+        flush();
+        return out;
+      };
+      const bw = Math.max(1.5, Math.min(10, step * 0.62));
+
+      sparks.forEach((el) => {
+        const r = M.rows[+el.dataset.k];
+        const gid = "g" + el.dataset.k + S.metric;
+        let body = "";
+        let maxLbl = null;
+        if (S.metric === "t") {
+          // precipitation micro-bars along the bottom (shared mm scale, max 16 px)
+          r.p.forEach((v, i) => {
+            if (!isNum(v) || v < 0.05) return;
+            const h = Math.max(1.5, (v / sc.pmax) * 16);
+            body += `<rect class="bar-p micro" x="${(X(i) - bw / 2).toFixed(1)}" y="${(SH - h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="1"/>`;
+          });
+          body += `<path d="${area(r.t, Y, SH)}" fill="url(#${gid})"/>`;
+          body += `<path class="ln-t" d="${path(r.t, Y)}"/>`;
+          const mx = maxOf(r.t);
+          if (mx != null) { const i = r.t.indexOf(mx); maxLbl = [i, Y(mx), F.num(mx, 0) + "°", "var(--temp)"]; }
+        } else if (S.metric === "p") {
+          r.p.forEach((v, i) => {
+            if (!isNum(v) || v < 0.05) return;
+            const y = Y(v);
+            body += `<rect class="bar-p" x="${(X(i) - bw / 2).toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1.5, SH - bot - y).toFixed(1)}" rx="1.5"/>`;
+          });
+          if (!nums(r.p).some((v) => v >= 0.05)) body += `<text class="gl" x="${((SW - padR) / 2).toFixed(1)}" y="${(SH / 2 + 3).toFixed(1)}" text-anchor="middle">kein Niederschlag</text>`;
+          const mx = maxOf(r.p);
+          if (mx >= 0.05) { const i = r.p.indexOf(mx); maxLbl = [i, Y(mx), F.num(mx, 1) + " mm", "var(--rain)"]; }
+        } else {
+          body += `<path d="${area(r.w, Y, SH - bot)}" fill="url(#${gid})"/>`;
+          body += `<path class="ln-w" d="${path(r.w, Y)}"/>`;
+          body += `<path class="ln-g" d="${path(r.g, Y)}"/>`;
+          const mx = maxOf(r.g);
+          if (mx != null) { const i = r.g.indexOf(mx); maxLbl = [i, Y(mx), F.num(mx, 0), "var(--gust)"]; }
+        }
+        let mxs = "";
+        if (maxLbl) {
+          const [i, y, txt, col] = maxLbl;
+          const x = X(i);
+          const plotR = SW - padR;
+          const anchor = x < 18 ? "start" : x > plotR - 18 ? "end" : "middle";
+          mxs = `<g class="mxg"><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.6" fill="${col}"/><text class="mx" x="${x.toFixed(1)}" y="${Math.max(9, y - 5).toFixed(1)}" text-anchor="${anchor}">${F.esc(txt)}</text></g>`;
+        }
+        const gradCol = S.metric === "t" ? "var(--temp)" : "var(--wind)";
+        el.innerHTML = `<svg width="${SW}" height="${SH}" viewBox="0 0 ${SW} ${SH}" aria-hidden="true">
+          <defs><linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${gradCol}" stop-opacity="0.28"/><stop offset="1" stop-color="${gradCol}" stop-opacity="0.02"/></linearGradient></defs>
+          ${nightBands}${grid}${nowLine}${body}${mxs}<g class="cur" style="display:none"><line y1="0" y2="${SH}"/><circle r="3.6"/><rect rx="4" height="16"/><text></text></g></svg>`;
+        el.setAttribute("role", "img");
+        el.setAttribute("aria-label", r.name + ": " + METRICS.find((m) => m.key === S.metric).label + "-Verlauf");
+      });
+
+      // shared time axis
+      const ax = app.querySelector(".cp-axis-spark");
+      if (ax) {
+        const AH = 18;
+        const every = [1, 2, 3, 4, 6, 12].find((e) => step * e >= 34) || 12;
+        let ticks = "";
+        let lastDay = null;
+        M.times.forEach((iso, i) => {
+          const day = F.day(iso).split(",")[0];
+          const newDay = lastDay != null && day !== lastDay;
+          lastDay = day;
+          const h = +hourLbl(iso);
+          if (newDay && h === 0) {
+            ticks += `<text class="tick day" x="${X(i).toFixed(1)}" y="12" text-anchor="middle">${F.esc(day)}</text>`;
+            return;
+          }
+          if (h % every !== 0) return;
+          if (X(i) > SW - 12) return;
+          const anchor = X(i) < 10 ? "start" : "middle";
+          ticks += `<text class="tick" x="${X(i).toFixed(1)}" y="12" text-anchor="${anchor}">${F.esc(hourLbl(iso))}</text>`;
+        });
+        ax.innerHTML = `<svg width="${SW}" height="${AH}" viewBox="0 0 ${SW} ${AH}" aria-hidden="true">${ticks}<g class="cur" style="display:none"><rect rx="4" height="16" y="0"/><text y="12"></text></g></svg>`;
+      }
+      if (S.hover != null) showCursor(S.hover);
+    }
+
+    function showCursor(i) {
+      const g = M.geo;
+      if (!g || i == null || i < 0 || i >= g.n) return hideCursor();
+      S.hover = i;
+      const x = g.X(i);
+      const rowsEl = app.querySelector(".cp-rows");
+      if (rowsEl) rowsEl.classList.add("hovering");
+      app.querySelectorAll(".cp-row .cp-spark").forEach((el) => {
+        const cur = el.querySelector(".cur");
+        if (!cur) return;
+        const r = M.rows[+el.dataset.k];
+        const v = S.metric === "t" ? r.t[i] : S.metric === "p" ? r.p[i] : (isNum(r.g[i]) ? r.g[i] : r.w[i]);
+        cur.style.display = "";
+        const ln = cur.querySelector("line");
+        ln.setAttribute("x1", x); ln.setAttribute("x2", x);
+        const c = cur.querySelector("circle");
+        const col = S.metric === "t" ? "var(--temp)" : S.metric === "p" ? "var(--rain)" : "var(--gust)";
+        if (isNum(v)) {
+          const cy = S.metric === "p" ? Math.min(g.Y(v), g.SH - 4) : g.Y(v);
+          c.setAttribute("cx", x); c.setAttribute("cy", cy); c.setAttribute("fill", col); c.style.display = "";
+        } else c.style.display = "none";
+        const txt = fmtMetric(S.metric, r, i);
+        const t = cur.querySelector("text"), rc = cur.querySelector("rect");
+        t.textContent = txt;
+        const tw = Math.ceil(t.getComputedTextLength ? t.getComputedTextLength() : txt.length * 6) + 12;
+        const right = x + 8 + tw <= g.SW - 4;
+        const rx = right ? x + 6 : x - 6 - tw;
+        rc.setAttribute("x", rx); rc.setAttribute("y", 0); rc.setAttribute("width", tw);
+        t.setAttribute("x", rx + 6); t.setAttribute("y", 11.5);
+      });
+      const ax = app.querySelector(".cp-axis-spark .cur");
+      if (ax) {
+        ax.style.display = "";
+        const t = ax.querySelector("text"), rc = ax.querySelector("rect");
+        t.textContent = F.day(M.times[i]).split(",")[0] + " " + F.time(M.times[i]);
+        const tw = Math.ceil(t.getComputedTextLength ? t.getComputedTextLength() : 60) + 12;
+        const rx = clamp(x - tw / 2, 0, g.SW - tw);
+        rc.setAttribute("x", rx); rc.setAttribute("width", tw);
+        t.setAttribute("x", rx + 6);
+      }
+    }
+    function hideCursor() {
+      S.hover = null;
+      const rowsEl = app.querySelector(".cp-rows");
+      if (rowsEl) rowsEl.classList.remove("hovering");
+      app.querySelectorAll(".cur").forEach((c) => { c.style.display = "none"; });
+    }
+    function bindHover() {
+      app.querySelectorAll(".cp-row .cp-spark").forEach((el) => {
+        el.addEventListener("pointermove", (e) => {
+          const g = M.geo;
+          if (!g || g.n < 1) return;
+          const r = el.getBoundingClientRect();
+          const i = g.n > 1 ? Math.round(((e.clientX - r.left - g.X(0)) / (g.X(g.n - 1) - g.X(0))) * (g.n - 1)) : 0;
+          showCursor(clamp(i, 0, g.n - 1));
+        });
+        el.addEventListener("pointerleave", hideCursor);
+      });
+    }
+
+    DWD.onData((data) => {
+      if (!data || typeof data !== "object") return;
+      D = data;
+      render();
+    });
+    if (typeof ResizeObserver !== "undefined") {
+      let raf = 0;
+      new ResizeObserver(() => {
+        if (!D || Math.abs(app.clientWidth - S.lastW) < 1) return;
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(render);
+      }).observe(app);
+    }
+    new MutationObserver(() => { if (D) render(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  })();
+  </script>
+</body>
+</html>

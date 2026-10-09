@@ -1,0 +1,116 @@
+{
+  "widget": "current",
+  "location": {
+    "name": "Berlin",
+    "lat": 52.52,
+    "lon": 13.405
+  },
+  "model": {
+    "collection_id": "ICON-D2-RUC@single_level",
+    "instance_id": "2026-10-09T08:00:00Z",
+    "reference_time": "2026-10-09T08:00:00Z"
+  },
+  "generated_at": "2026-10-09T08:41:12Z",
+  "source": "Deutscher Wetterdienst · ICON-D2-RUC (EDR API)",
+  "now": {
+    "time": "2026-10-09T09:00:00Z",
+    "t2m_c": 12.6,
+    "td2m_c": 8.2,
+    "precip_mm": 0,
+    "precip_total_mm": 0,
+    "cloud_pct": 45,
+    "wind_speed_kmh": 15.5,
+    "wind_dir_deg": 215,
+    "gust_kmh": 27.4,
+    "pmsl_hpa": 1011.6,
+    "ww": 2
+  },
+  "next": [
+    {
+      "time": "2026-10-09T10:00:00Z",
+      "t2m_c": 13.9,
+      "td2m_c": 9.9,
+      "precip_mm": 0,
+      "precip_total_mm": 0,
+      "cloud_pct": 60,
+      "wind_speed_kmh": 17.8,
+      "wind_dir_deg": 220,
+      "gust_kmh": 30.4,
+      "pmsl_hpa": 1010.5,
+      "ww": 3
+    },
+    {
+      "time": "2026-10-09T11:00:00Z",
+      "t2m_c": 15,
+      "td2m_c": 11.4,
+      "precip_mm": 0,
+      "precip_total_mm": 0,
+      "cloud_pct": 75,
+      "wind_speed_kmh": 19.2,
+      "wind_dir_deg": 225,
+      "gust_kmh": 34.4,
+      "pmsl_hpa": 1009.2,
+      "ww": 3
+    },
+    {
+      "time": "2026-10-09T12:00:00Z",
+      "t2m_c": 15.8,
+      "td2m_c": 12.8,
+      "precip_mm": 0,
+      "precip_total_mm": 0,
+      "cloud_pct": 88,
+      "wind_speed_kmh": 21.5,
+      "wind_dir_deg": 230,
+      "gust_kmh": 38.4,
+      "pmsl_hpa": 1007.8,
+      "ww": 3
+    },
+    {
+      "time": "2026-10-09T13:00:00Z",
+      "t2m_c": 15.2,
+      "td2m_c": 13,
+      "precip_mm": 0.2,
+      "precip_total_mm": 0.2,
+      "cloud_pct": 96,
+      "wind_speed_kmh": 24.8,
+      "wind_dir_deg": 235,
+      "gust_kmh": 44.4,
+      "pmsl_hpa": 1006.4,
+      "ww": 61
+    },
+    {
+      "time": "2026-10-09T14:00:00Z",
+      "t2m_c": 13.4,
+      "td2m_c": 12.2,
+      "precip_mm": 1.4,
+      "precip_total_mm": 1.6,
+      "cloud_pct": 100,
+      "wind_speed_kmh": 27.2,
+      "wind_dir_deg": 245,
+      "gust_kmh": 51.4,
+      "pmsl_hpa": 1005.3,
+      "ww": 63
+    },
+    {
+      "time": "2026-10-09T15:00:00Z",
+      "t2m_c": 12.1,
+      "td2m_c": 11.5,
+      "precip_mm": 3.2,
+      "precip_total_mm": 4.8,
+      "cloud_pct": 100,
+      "wind_speed_kmh": 28.5,
+      "wind_dir_deg": 255,
+      "gust_kmh": 55.4,
+      "pmsl_hpa": 1004.8,
+      "ww": 95
+    }
+  ],
+  "today": {
+    "t_min_c": 9,
+    "t_max_c": 15.8,
+    "precip_sum_mm": 9.6,
+    "gust_max_kmh": 55.4,
+    "gust_max_time": "2026-10-09T15:00:00Z",
+    "cloud_mean_pct": 50
+  }
+}

@@ -1,0 +1,982 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DWD · Wetterkarte</title>
+  <!--DWD:SHARED-->
+  <style>
+    :root {
+      --map-bg: #dfe6f1;
+      --map-land: #eef2f8;
+      --map-border: rgba(20, 33, 61, 0.78);
+      --map-border-halo: rgba(255, 255, 255, 0.55);
+      --map-grat: rgba(20, 33, 61, 0.12);
+      --map-label: #14213d;
+      --map-label-halo: rgba(255, 255, 255, 0.85);
+      --ov-bg: rgba(16, 22, 34, 0.84);
+      --ov-ink: #f4f6fb;
+      --ov-ink-2: rgba(244, 246, 251, 0.66);
+      --ov-accent: #8fb0ff;
+      --ov-lime: #b6e36f;
+      --seg-bg: rgba(255, 255, 255, 0.94);
+    }
+    :root[data-theme="dark"] {
+      --map-bg: #0e1522;
+      --map-land: #172133;
+      --map-border: rgba(238, 242, 250, 0.82);
+      --map-border-halo: rgba(0, 0, 0, 0.45);
+      --map-grat: rgba(238, 242, 250, 0.10);
+      --map-label: #eef2fa;
+      --map-label-halo: rgba(10, 14, 22, 0.8);
+      --ov-bg: rgba(10, 14, 22, 0.82);
+      --seg-bg: rgba(23, 30, 45, 0.94);
+    }
+
+    .dwd-card.am-card { padding: 0; }
+    #app { container-type: inline-size; }
+
+    .am-map {
+      position: relative; overflow: hidden;
+      background: var(--map-bg);
+      border-bottom: 1px solid var(--line);
+      touch-action: pan-y;
+      user-select: none; -webkit-user-select: none;
+    }
+    .am-map canvas, .am-map svg.am-svg { position: absolute; inset: 0; display: block; }
+    .am-map svg.am-svg { pointer-events: none; overflow: hidden; }
+
+    .am-border-halo { fill: none; stroke: var(--map-border-halo); stroke-width: 3.2; stroke-linejoin: round; }
+    .am-border { fill: none; stroke: var(--map-border); stroke-width: 1.25; stroke-linejoin: round; }
+    .am-land { fill: var(--map-land); stroke: none; }
+    .am-grat { stroke: var(--map-grat); stroke-width: 1; fill: none; }
+    .am-domain { fill: none; stroke: var(--map-border); stroke-opacity: 0.35; stroke-width: 1; stroke-dasharray: 3 4; }
+    svg .am-gl { font-size: 9.5px; font-weight: 600; fill: var(--map-label); fill-opacity: 0.8; }
+    .am-glbg { fill: var(--map-label-halo); fill-opacity: 0.62; }
+    .am-map.opaque svg .am-city.on, .am-map.opaque svg .am-gl { fill: #14213d; stroke: rgba(255, 255, 255, 0.85); }
+    .am-map.opaque svg .am-gl { stroke: none; }
+    .am-map.opaque .am-glbg { fill: rgba(255, 255, 255, 0.85); fill-opacity: 0.6; }
+    svg .am-country { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; fill: var(--map-label); fill-opacity: 0.38; }
+    svg .am-city { font-size: 11px; font-weight: 600; fill: var(--map-label); paint-order: stroke; stroke: var(--map-label-halo); stroke-width: 3px; stroke-linejoin: round; }
+    .am-city-dot { fill: #fff; stroke: #14213d; stroke-width: 1.4; }
+
+    /* --- overlays -------------------------------------------------- */
+    .am-top {
+      position: absolute; left: 10px; right: 10px; top: 10px;
+      display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: flex-start;
+      pointer-events: none; z-index: 4;
+    }
+    .am-top > * { pointer-events: auto; }
+    .am-pill {
+      display: inline-flex; align-items: center; gap: 9px;
+      background: var(--ov-bg); color: var(--ov-ink);
+      border-radius: 12px; padding: 5px 12px 5px 5px;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+      font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap;
+    }
+    .am-pill .am-badge {
+      width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center;
+      background: #fff; color: #14213d; flex: none;
+    }
+    .am-pill .am-pill-sub { color: var(--ov-ink-2); font-weight: 500; }
+
+    .am-seg.dwd-seg {
+      background: var(--seg-bg); border-color: transparent;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    }
+    .am-seg.dwd-seg button { padding: 7px 11px; color: var(--ink); }
+    .am-seg.dwd-seg button[aria-pressed="true"] { background: var(--dwd-blue); color: #fff; }
+    .am-seg.dwd-seg button:disabled { cursor: progress; }
+    .am-seg.dwd-seg button:not([aria-pressed="true"]):hover { background: var(--accent-soft); }
+
+    .am-info {
+      position: absolute; right: 10px; top: 56px; z-index: 3;
+      width: 176px; padding: 11px 13px 10px;
+      background: var(--ov-bg); color: var(--ov-ink); border-radius: 14px;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+      font-size: 12px;
+    }
+    .am-info .am-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ov-lime); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .am-info .am-big { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 2px 0 6px; }
+    .am-info .am-big small { font-size: 13px; font-weight: 600; color: var(--ov-ink-2); margin-left: 3px; }
+    .am-info .am-row { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; color: var(--ov-ink-2); }
+    .am-info .am-row b { color: var(--ov-ink); font-weight: 650; }
+    .am-info .am-row b.up { color: #ffb38a; }
+    .am-info .am-row b.down { color: #9cc3ff; }
+
+    .am-markers { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+    .am-marker { position: absolute; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; }
+    .am-marker .am-mlabel {
+      display: inline-flex; align-items: baseline; gap: 6px;
+      background: var(--ov-bg); color: var(--ov-ink); border-radius: 8px; padding: 4px 8px;
+      font-size: 12px; font-weight: 600; white-space: nowrap;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.22);
+    }
+    .am-marker .am-mlabel b { font-weight: 700; color: var(--ov-lime); }
+    .am-marker .am-stem { width: 2px; height: 7px; background: var(--ov-bg); }
+    .am-marker .am-dot { width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 3px solid var(--dwd-blue); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35); margin-bottom: -6px; }
+
+    .am-hover {
+      position: absolute; z-index: 5; pointer-events: none;
+      background: var(--ov-bg); color: var(--ov-ink); border-radius: 9px; padding: 5px 9px;
+      font-size: 12px; white-space: nowrap; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+      display: none;
+    }
+    .am-hover b { font-size: 13px; font-weight: 700; }
+    .am-hover span { color: var(--ov-ink-2); margin-left: 6px; }
+    .am-cross { position: absolute; z-index: 4; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.45); pointer-events: none; display: none; }
+
+    .am-note {
+      position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%); z-index: 3; pointer-events: none;
+      display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+      background: var(--ov-bg); color: var(--ov-ink); border-radius: 999px; padding: 8px 14px; font-size: 12.5px; font-weight: 600;
+    }
+    .am-note[hidden] { display: none; }
+    .am-loading {
+      position: absolute; inset: 0; z-index: 6; display: grid; place-items: center;
+      background: rgba(10, 14, 22, 0.18);
+    }
+    .am-loading > div {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: var(--ov-bg); color: var(--ov-ink); border-radius: 999px; padding: 9px 16px; font-size: 13px; font-weight: 600;
+    }
+    .am-spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.25); border-top-color: #fff; animation: amspin 0.8s linear infinite; }
+    @keyframes amspin { to { transform: rotate(360deg); } }
+
+    /* --- timeline -------------------------------------------------- */
+    .am-time {
+      position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 4;
+      display: flex; align-items: center; gap: 12px;
+      background: var(--ov-bg); color: var(--ov-ink); border-radius: 14px; padding: 7px 16px 7px 7px;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+    }
+    .am-play {
+      width: 36px; height: 36px; flex: none; border: 0; border-radius: 10px; cursor: pointer;
+      background: var(--dwd-blue); color: #fff; display: grid; place-items: center;
+    }
+    button.am-play:hover { background: #3a66c8; }
+    .am-single { flex: 1; font-size: 12px; color: var(--ov-ink-2); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .am-play .dwd-icon path { stroke-width: 2.4; }
+    .am-tlabel { display: flex; flex-direction: column; line-height: 1.15; flex: none; min-width: 64px; }
+    .am-tlabel b { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+    .am-tlabel span { font-size: 10.5px; font-weight: 650; color: var(--ov-accent); white-space: nowrap; }
+    .am-track { position: relative; flex: 1; height: 36px; cursor: pointer; outline: none; min-width: 80px; touch-action: none; }
+    .am-rail { position: absolute; left: 0; right: 0; top: 9px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.16); }
+    .am-fill { position: absolute; left: 0; top: 9px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #5d83e6, #8fb0ff); }
+    .am-thumb {
+      position: absolute; top: 12px; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%;
+      background: #8fb0ff; border: 3px solid #fff; box-shadow: 0 0 0 3px rgba(143, 176, 255, 0.35);
+    }
+    .am-track:focus-visible .am-thumb { box-shadow: 0 0 0 4px rgba(182, 227, 111, 0.7); }
+    .am-tick { position: absolute; top: 21px; transform: translateX(-50%); font-size: 10px; color: var(--ov-ink-2); white-space: nowrap; }
+    .am-tick.first { transform: translateX(-2px); }
+    .am-tick.day { color: var(--ov-lime); font-weight: 700; }
+
+    /* --- footer / legend ------------------------------------------- */
+    .am-foot { padding: 9px 14px 10px; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 18px; }
+    .am-legend { display: flex; align-items: flex-end; gap: 10px; flex: 1 1 260px; min-width: 0; max-width: 400px; }
+    .am-legend-unit { font-size: 11px; font-weight: 700; color: var(--ink-2); padding-bottom: 15px; white-space: nowrap; }
+    .am-legend-bar-wrap { flex: 1; min-width: 0; }
+    .am-legend-bar { position: relative; height: 10px; border-radius: 5px; box-shadow: inset 0 0 0 1px var(--line); background-color: var(--map-land); }
+    .am-legend-bar > div { position: absolute; inset: 0; border-radius: 5px; }
+    .am-legend-ticks { position: relative; height: 14px; margin-top: 4px; }
+    .am-legend-ticks span { position: absolute; transform: translateX(-50%); font-size: 10px; color: var(--ink-3); white-space: nowrap; }
+    .am-legend-ticks span.l { transform: none; }
+    .am-legend-ticks span.r { transform: translateX(-100%); }
+    .am-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: 11px; color: var(--ink-3); }
+    .am-meta .am-mm { font-size: 12px; color: var(--ink-2); }
+    .am-meta .am-mm b { color: var(--ink); font-weight: 650; }
+    .am-meta .am-src { display: inline-flex; align-items: center; gap: 6px; }
+    .am-err { margin: 10px 14px 0; }
+
+    @container (max-width: 560px) {
+      .am-pill .am-pill-sub { display: none; }
+      .am-info { display: none; }
+      .am-seg.dwd-seg button { padding: 6px 8px; font-size: 11.5px; }
+      .am-meta { align-items: flex-start; }
+      .am-foot { flex-direction: column; align-items: stretch; }
+      .am-legend { max-width: none; flex-basis: auto; }
+    }
+    @container (max-width: 420px) {
+      .am-tlabel { min-width: 52px; }
+      .am-tlabel b { font-size: 14px; }
+      .am-time { gap: 9px; padding-right: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="dwd-card am-card">
+    <div class="dwd-skeleton">Lade DWD-Daten …</div>
+    <div class="dwd-content" id="app"></div>
+  </div>
+  <script>
+  (function () {
+    "use strict";
+    const app = document.getElementById("app");
+    const F = DWD.fmt;
+    const isNum = (v) => typeof v === "number" && isFinite(v);
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const RAD = Math.PI / 180;
+
+    // ---- static geography (coarse, hand-made, lon/lat) ------------------
+    const GERMANY = [
+      [7.21,53.24],[7.05,53.58],[7.75,53.71],[8.05,53.70],[8.15,53.52],[8.50,53.55],[8.58,53.86],[8.90,53.90],
+      [9.05,54.05],[8.83,54.15],[8.60,54.35],[8.95,54.52],[8.66,54.91],[9.44,54.82],[9.95,54.78],[10.03,54.55],
+      [10.15,54.34],[10.70,54.32],[11.10,54.45],[10.82,54.10],[10.88,53.96],[11.45,53.92],[11.60,54.10],
+      [12.10,54.18],[12.45,54.42],[13.10,54.45],[13.40,54.68],[13.70,54.35],[13.80,54.15],[14.22,53.93],
+      [14.27,53.70],[14.40,53.25],[14.38,53.06],[14.32,53.00],[14.14,52.87],[14.17,52.78],[14.33,52.70],[14.45,52.67],[14.62,52.58],[14.55,52.35],[14.75,52.07],
+      [14.72,51.95],[14.65,51.73],[14.73,51.55],[14.98,51.33],[15.04,51.27],[14.83,50.87],[14.60,50.98],
+      [14.40,51.04],[14.25,50.87],[13.85,50.73],[13.50,50.62],[13.05,50.50],[12.60,50.40],[12.20,50.30],
+      [12.10,50.25],[12.50,49.98],[12.45,49.75],[12.65,49.45],[13.00,49.30],[13.45,48.95],[13.83,48.77],
+      [13.73,48.52],[13.45,48.57],[13.03,48.25],[12.88,47.97],[13.00,47.75],[13.05,47.50],[12.80,47.62],
+      [12.20,47.70],[11.65,47.58],[11.40,47.45],[11.00,47.40],[10.70,47.55],[10.45,47.55],[10.20,47.27],
+      [9.97,47.54],[9.60,47.53],[9.50,47.65],[9.17,47.66],[8.85,47.66],[8.55,47.80],[8.55,47.62],[8.20,47.60],
+      [7.60,47.58],[7.55,47.90],[7.58,48.12],[7.80,48.50],[8.20,48.97],[7.60,49.05],[7.00,49.15],[6.73,49.16],
+      [6.36,49.46],[6.50,49.73],[6.13,50.13],[6.40,50.32],[6.20,50.50],[6.02,50.75],[5.87,51.05],[6.18,51.37],
+      [5.95,51.75],[6.10,51.85],[6.40,51.83],[6.75,52.00],[7.05,52.23],[6.70,52.45],[7.05,52.65],[7.20,53.00]
+    ];
+    const BIG_CITIES = [
+      ["Berlin",13.405,52.52],["Hamburg",9.99,53.55],["München",11.575,48.137],["Köln",6.96,50.94],
+      ["Frankfurt",8.68,50.11],["Leipzig",12.37,51.34],["Dresden",13.74,51.05],["Hannover",9.73,52.37],
+      ["Stuttgart",9.18,48.78],["Nürnberg",11.08,49.45]
+    ];
+    const SMALL_CITIES = [
+      ["Potsdam",13.06,52.40],["Cottbus",14.33,51.76],["Frankfurt (Oder)",14.55,52.34],["Eberswalde",13.82,52.83],
+      ["Neuruppin",12.80,52.93],["Brandenburg",12.56,52.41],["Magdeburg",11.63,52.13],["Rostock",12.10,54.09],
+      ["Schwerin",11.42,53.63],["Kiel",10.13,54.32],["Bremen",8.80,53.08],["Erfurt",11.03,50.98],["Halle",11.97,51.48],
+      ["Chemnitz",12.92,50.83],["Augsburg",10.90,48.37],["Freiburg",7.85,47.99],["Karlsruhe",8.40,49.01],
+      ["Mannheim",8.47,49.49],["Dortmund",7.47,51.51],["Düsseldorf",6.78,51.23],["Münster",7.63,51.96],
+      ["Kassel",9.48,51.31],["Regensburg",12.10,49.01],["Würzburg",9.93,49.79],["Saarbrücken",7.00,49.23],
+      ["Lübeck",10.69,53.87],["Osnabrück",8.05,52.28],["Göttingen",9.93,51.54],["Ulm",9.99,48.40],["Passau",13.43,48.57],
+      ["Görlitz",14.99,51.15],["Stralsund",13.09,54.31],["Neubrandenburg",13.26,53.56],["Lüneburg",10.41,53.25]
+    ];
+    const COUNTRIES = [
+      ["POLEN",15.6,52.6],["POLEN",15.3,51.6],["TSCHECHIEN",14.2,50.2],["ÖSTERREICH",13.2,47.25],["SCHWEIZ",8.4,47.2],
+      ["FRANKREICH",7.0,48.5],["LUXEMBURG",6.05,49.75],["BELGIEN",5.75,50.4],["NIEDERLANDE",5.8,52.4],["DÄNEMARK",9.4,55.3],
+      ["OSTSEE",12.7,54.75],["NORDSEE",7.4,54.3]
+    ];
+
+    // ---- colour scales -------------------------------------------------
+    const hex = (h, a) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16), a == null ? 1 : a];
+    const sqrtTf = (v) => Math.sqrt(Math.max(0, v));
+    const linTf = (v) => v;
+    const niceUp = (v, steps) => steps.find((s) => v <= s) || steps[steps.length - 1];
+    const SCALES = {
+      temp: {
+        tf: linTf, alpha: 0.92, dec: 1,
+        stops: () => [[-25, hex("#2a1a6e")], [-15, hex("#3b2a8f")], [-5, hex("#2f5fc0")], [0, hex("#5b9be0")], [5, hex("#94c4ec")],
+          [10, hex("#e6eee7")], [14, hex("#fcd98e")], [18, hex("#fbab5c")], [22, hex("#f47d3c")], [27, hex("#e0482b")],
+          [32, hex("#b31d2c")], [40, hex("#6e0f3a")], [45, hex("#4a0a2a")]],
+        legend: (s) => { let lo = Math.floor(s.min), hi = Math.ceil(s.max); if (hi - lo < 4) { const m = (hi + lo) / 2; lo = Math.floor(m - 2); hi = Math.ceil(m + 2); } return [lo, hi]; },
+        lut: () => [-25, 45],
+      },
+      precip: {
+        tf: sqrtTf, alpha: 1, dec: 1,
+        stops: () => [[0, [150, 205, 250, 0]], [0.03, [150, 205, 250, 0]], [0.1, [160, 210, 250, 0.3]], [0.3, [140, 198, 246, 0.55]], [0.6, [105, 176, 240, 0.74]],
+          [1, [64, 145, 228, 0.86]], [2, [33, 98, 205, 0.92]], [5, [40, 48, 160, 0.95]], [10, [112, 44, 172, 0.95]],
+          [20, [190, 50, 170, 0.96]], [50, [235, 100, 205, 0.97]]],
+        legend: (s) => [0, niceUp(Math.max(2, s.max), [2, 5, 10, 20, 50])],
+        lut: () => [0, 60],
+      },
+      cloud: {
+        tf: linTf, alpha: 1, dec: 0,
+        stops: (dark) => dark
+          ? [[0, [200, 210, 225, 0]], [10, [200, 210, 225, 0]], [30, [205, 213, 226, 0.25]], [60, [215, 222, 233, 0.5]], [85, [228, 233, 241, 0.7]], [100, [240, 243, 248, 0.82]]]
+          : [[0, [120, 132, 152, 0]], [10, [120, 132, 152, 0]], [30, [128, 138, 158, 0.25]], [60, [110, 121, 142, 0.48]], [85, [88, 99, 120, 0.66]], [100, [70, 80, 100, 0.78]]],
+        legend: () => [0, 100],
+        lut: () => [0, 100],
+      },
+      wind: {
+        tf: linTf, alpha: 0.9, dec: 0,
+        stops: () => [[0, hex("#1d6f86")], [15, hex("#23a19a")], [30, hex("#7fca6a")], [45, hex("#e8d64d")], [60, hex("#f39a2b")],
+          [80, hex("#e5352b")], [100, hex("#9b1c6b")], [140, hex("#4f0e52")]],
+        legend: (s) => [0, niceUp(Math.max(40, s.max), [40, 60, 80, 100, 120, 150])],
+        lut: () => [0, 160],
+      },
+      cape: {
+        tf: sqrtTf, alpha: 1, dec: 0,
+        stops: () => [[0, [255, 236, 150, 0]], [40, [255, 236, 150, 0]], [150, [255, 226, 115, 0.55]], [500, [255, 196, 60, 0.82]],
+          [1000, [255, 145, 30, 0.9]], [2000, [229, 53, 43, 0.93]], [3000, [155, 28, 107, 0.95]], [4500, [90, 18, 105, 0.96]]],
+        legend: (s) => [0, niceUp(Math.max(500, s.max), [500, 1000, 1500, 2000, 3000, 4000, 5000])],
+        lut: () => [0, 5000],
+      },
+    };
+    const LONG = { T_2M: "Temperatur", TOT_PREC: "Niederschlag", CLCT: "Bewölkung", VMAX_10M: "Böen", CAPE_ML: "CAPE" };
+    const MID = { T_2M: "Temperatur", TOT_PREC: "Regen", CLCT: "Wolken", VMAX_10M: "Böen", CAPE_ML: "CAPE" };
+    const SHORT = { T_2M: "Temp.", TOT_PREC: "Regen", CLCT: "Wolken", VMAX_10M: "Böen", CAPE_ML: "CAPE" };
+
+    function stopColor(stops, v) {
+      if (v <= stops[0][0]) return stops[0][1];
+      for (let i = 1; i < stops.length; i++) {
+        if (v <= stops[i][0]) {
+          const [a, ca] = stops[i - 1], [b, cb] = stops[i];
+          const f = (v - a) / (b - a || 1);
+          return [0, 1, 2, 3].map((k) => ca[k] + (cb[k] - ca[k]) * f);
+        }
+      }
+      return stops[stops.length - 1][1];
+    }
+    const LUTN = 1024;
+    function buildLut(sc, dark) {
+      const stops = sc.stops(dark);
+      const [lo, hi] = sc.lut();
+      const tlo = sc.tf(lo), thi = sc.tf(hi);
+      const lut = new Uint8ClampedArray(LUTN * 4);
+      for (let i = 0; i < LUTN; i++) {
+        const tv = tlo + ((thi - tlo) * i) / (LUTN - 1);
+        const v = sc.tf === sqrtTf ? tv * tv : tv;
+        const c = stopColor(stops, v);
+        lut[i * 4] = c[0]; lut[i * 4 + 1] = c[1]; lut[i * 4 + 2] = c[2]; lut[i * 4 + 3] = c[3] * 255 * sc.alpha;
+      }
+      return { lut, tlo, thi, tf: sc.tf, stops };
+    }
+
+    // ---- state -----------------------------------------------------------
+    let D = null;            // current payload
+    let origArgs = null;     // tool arguments from host
+    let L = null;            // layout cache for the current render
+    const S = { t: 0, playing: false, timer: null, loading: null, error: null, lastW: 0, hoverXY: null };
+
+    DWD.onInput((a) => { origArgs = a || null; });
+
+    const isDark = () => document.documentElement.dataset.theme === "dark";
+    function scaleOf(p) { return SCALES[p && p.scale] || SCALES.temp; }
+    function decFor(v, p) {
+      const sc = scaleOf(p);
+      return sc === SCALES.precip ? (Math.abs(v) >= 10 ? 0 : 1) : sc.dec;
+    }
+    function unitOf(p) { return p && p.unit ? p.unit : ""; }
+    function fmtVal(v, p) {
+      if (!isNum(v)) return "–";
+      const u = unitOf(p);
+      return F.num(v, decFor(v, p)) + (u ? " " + u : "");
+    }
+    function fmtShort(v, p) {
+      if (!isNum(v)) return "–";
+      if (p && p.scale === "temp") return F.num(v, 1) + "°";
+      return fmtVal(v, p);
+    }
+    function hourLbl(iso) {
+      const h = typeof F.localHour === "function" ? F.localHour(iso) : null;
+      return isNum(h) ? String(h).padStart(2, "0") : String(F.hour(iso)).replace(/\D+/g, "");
+    }
+    function degLabel(v, axis) {
+      const d = Math.abs(v);
+      const dec = Math.abs(d - Math.round(d)) < 1e-6 ? 0 : (Math.abs(d * 2 - Math.round(d * 2)) < 1e-6 ? 1 : 2);
+      return F.num(d, dec) + "° " + (axis === "lat" ? (v >= 0 ? "N" : "S") : (v >= 0 ? "O" : "W"));
+    }
+
+    // ---- data accessors --------------------------------------------------
+    function grid(t) {
+      const g = D && Array.isArray(D.values) ? D.values[t] : null;
+      return Array.isArray(g) ? g : null;
+    }
+    function cell(g, j, i) {
+      const row = g[j];
+      if (!row) return null;
+      const v = row[i];
+      return isNum(v) ? v : null;
+    }
+    // fractional index in an ascending axis of cell centres, with half-cell extrapolation; -1 = outside
+    function axisPos(axis, v) {
+      const n = axis.length;
+      if (!n) return -1;
+      if (n === 1) return Math.abs(v - axis[0]) <= 0.5 ? 0 : -1;
+      const h0 = (axis[1] - axis[0]) / 2, h1 = (axis[n - 1] - axis[n - 2]) / 2;
+      if (v < axis[0] - h0 || v > axis[n - 1] + h1) return -1;
+      if (v <= axis[0]) return 0;
+      if (v >= axis[n - 1]) return n - 1;
+      let lo = 0, hi = n - 1;
+      while (hi - lo > 1) { const m = (lo + hi) >> 1; if (axis[m] <= v) lo = m; else hi = m; }
+      return lo + (v - axis[lo]) / (axis[hi] - axis[lo] || 1);
+    }
+    function sample(g, fy, fx) {
+      if (!g || fy < 0 || fx < 0) return null;
+      const W = L.nx, H = L.ny;
+      const i0 = Math.min(W - 1, Math.floor(fx)), j0 = Math.min(H - 1, Math.floor(fy));
+      const i1 = Math.min(W - 1, i0 + 1), j1 = Math.min(H - 1, j0 + 1);
+      const ax = fx - i0, ay = fy - j0;
+      let s = 0, w = 0, v;
+      if ((v = cell(g, j0, i0)) != null) { const k = (1 - ax) * (1 - ay); s += v * k; w += k; }
+      if ((v = cell(g, j0, i1)) != null) { const k = ax * (1 - ay); s += v * k; w += k; }
+      if ((v = cell(g, j1, i0)) != null) { const k = (1 - ax) * ay; s += v * k; w += k; }
+      if ((v = cell(g, j1, i1)) != null) { const k = ax * ay; s += v * k; w += k; }
+      return w >= 0.3 ? s / w : null;
+    }
+    function valueAt(t, lon, lat) {
+      const g = grid(t);
+      if (!g) return null;
+      return sample(g, axisPos(L.lats, lat), axisPos(L.lons, lon));
+    }
+    function frameStats(t) {
+      const g = grid(t);
+      if (!g) return null;
+      let mn = Infinity, mx = -Infinity, sum = 0, n = 0;
+      for (const row of g) if (Array.isArray(row)) for (const v of row) if (isNum(v)) { if (v < mn) mn = v; if (v > mx) mx = v; sum += v; n++; }
+      return n ? { min: mn, max: mx, mean: sum / n, n } : null;
+    }
+    function globalStats() {
+      if (D.stats && isNum(D.stats.min) && isNum(D.stats.max)) return D.stats;
+      let mn = Infinity, mx = -Infinity;
+      (D.values || []).forEach((_, t) => { const s = frameStats(t); if (s) { mn = Math.min(mn, s.min); mx = Math.max(mx, s.max); } });
+      return isFinite(mn) ? { min: mn, max: mx } : { min: 0, max: 1 };
+    }
+
+    // ---- layout ----------------------------------------------------------
+    function computeLayout(width) {
+      const lons = (D.lons || []).filter(isNum), lats = (D.lats || []).filter(isNum);
+      let bb = Array.isArray(D.bbox) && D.bbox.length === 4 && D.bbox.every(isNum) ? D.bbox.slice() : null;
+      if (!bb && lons.length && lats.length) bb = [lons[0], lats[0], lons[lons.length - 1], lats[lats.length - 1]];
+      if (!bb) bb = [5.8, 47.2, 15.1, 55.1];
+      if (bb[2] - bb[0] < 0.05) { bb[0] -= 0.25; bb[2] += 0.25; }
+      if (bb[3] - bb[1] < 0.05) { bb[1] -= 0.15; bb[3] += 0.15; }
+      const latc = (bb[1] + bb[3]) / 2, lonc = (bb[0] + bb[2]) / 2;
+      const k0 = Math.cos(latc * RAD);
+      const spanX = (bb[2] - bb[0]) * k0, spanY = bb[3] - bb[1];
+      const W = Math.max(260, Math.round(width));
+      // keep the data domain clear of the timeline bar at the bottom
+      const padT = 4, padB = (D.times || []).length ? 64 : 8;
+      const natural = W * spanY / spanX + padT + padB;
+      const maxH = Math.min(450, W * (W < 480 ? 1.05 : 0.68));
+      const minH = Math.max(280, W * 0.5);
+      const H = Math.round(clamp(natural, minH, Math.max(minH, maxH)));
+      const s = Math.min(W / spanX, (H - padT - padB) / spanY);
+      const cy = padT + (H - padT - padB) / 2;
+      const proj = (lon, lat) => [W / 2 + (lon - lonc) * k0 * s, cy - (lat - latc) * s];
+      const unproj = (x, y) => [lonc + (x - W / 2) / (k0 * s), latc - (y - cy) / s];
+      const [vx0, vy1] = unproj(0, H), [vx1, vy0] = unproj(W, 0);
+      return { W, H, bb, proj, unproj, view: [vx0, vy1, vx1, vy0], lons, lats, nx: lons.length, ny: lats.length };
+    }
+
+    // ---- render (full, idempotent) ----------------------------------------
+    function render() {
+      if (!D) return;
+      const width = app.clientWidth || document.body.clientWidth || 600;
+      S.lastW = width;
+      L = computeLayout(width);
+      const p = D.parameter || { name: "", label: "Wetterkarte", unit: "", scale: "temp" };
+      const nT = Array.isArray(D.times) ? D.times.length : 0;
+      S.t = clamp(S.t, 0, Math.max(0, nT - 1));
+      const params = Array.isArray(D.available_parameters) && D.available_parameters.length ? D.available_parameters : [p];
+      const loadingName = S.loading;
+
+      const seg = params.map((ap) => {
+        const on = loadingName ? ap.name === loadingName : ap.name === p.name;
+        return `<button type="button" data-param="${F.esc(ap.name)}" aria-pressed="${on}" title="${F.esc(ap.label || ap.name)}"${loadingName ? " disabled" : ""}>${F.esc(LONG[ap.name] || ap.label || ap.name)}</button>`;
+      }).join("");
+
+      const marker = (D.markers || []).find((m) => m && isNum(m.lat) && isNum(m.lon));
+      const loadingLabel = loadingName ? ((params.find((x) => x.name === loadingName) || {}).label || loadingName) : "";
+
+      app.innerHTML = `
+        <div class="am-map" style="height:${L.H}px">
+          <canvas class="am-canvas" aria-hidden="true"></canvas>
+          <svg class="am-svg am-over" width="${L.W}" height="${L.H}" viewBox="0 0 ${L.W} ${L.H}" aria-hidden="true"></svg>
+          <div class="am-markers"></div>
+          <div class="am-cross"></div>
+          <div class="am-note" hidden></div>
+          <div class="am-hover"></div>
+          <div class="am-top">
+            <div class="am-pill"><span class="am-badge">${DWD.icon("layers", 16)}</span><span>${F.esc(p.label || p.name)}<span class="am-pill-sub"> · Wetterkarte</span></span></div>
+            ${params.length > 1 ? `<div class="dwd-seg am-seg" role="group" aria-label="Parameter">${seg}</div>` : ""}
+          </div>
+          ${marker ? `<div class="am-info" aria-live="polite"></div>` : ""}
+          ${nT ? `<div class="am-time">
+            ${nT > 1 ? `<button type="button" class="am-play" aria-label="Abspielen"></button>` : `<span class="am-play" aria-hidden="true">${DWD.icon("clock", 18)}</span>`}
+            <div class="am-tlabel"><b></b><span></span></div>
+            ${nT > 1 ? `<div class="am-track" role="slider" tabindex="0" aria-label="Zeitpunkt" aria-valuemin="0" aria-valuemax="${nT - 1}">
+              <div class="am-rail"></div><div class="am-fill"></div><div class="am-ticks"></div><div class="am-thumb"></div>
+            </div>` : `<div class="am-single">Einzelner Termin</div>`}
+          </div>` : ""}
+          ${loadingName ? `<div class="am-loading"><div><span class="am-spin"></span>Lade ${F.esc(loadingLabel)} …</div></div>` : ""}
+        </div>
+        ${S.error ? `<div class="dwd-error am-err" role="alert">${F.esc(S.error)}</div>` : ""}
+        <div class="am-foot">
+          <div class="am-legend"></div>
+          <div class="am-meta">
+            <div class="am-mm"></div>
+            <div class="am-src"><span class="dwd-logo">DWD</span>${F.esc(sourceText())}</div>
+          </div>
+        </div>`;
+
+      L.el = {
+        map: app.querySelector(".am-map"), canvas: app.querySelector(".am-canvas"), svg: app.querySelector(".am-over"),
+        markers: app.querySelector(".am-markers"), hover: app.querySelector(".am-hover"), cross: app.querySelector(".am-cross"),
+        info: app.querySelector(".am-info"), play: app.querySelector(".am-play"), track: app.querySelector(".am-track"),
+        tlabel: app.querySelector(".am-tlabel"), note: app.querySelector(".am-note"), legend: app.querySelector(".am-legend"), mm: app.querySelector(".am-mm"),
+      };
+      L.param = p;
+      L.scale = scaleOf(p);
+      L.lut = buildLut(L.scale, isDark());
+      L.marker = marker || null;
+      L.gstats = globalStats();
+      // temperature: stretch small ranges around their centre so subtle gradients stay visible,
+      // while the palette hue still roughly matches the absolute temperature
+      L.pre = (v) => v;
+      if (L.scale === SCALES.temp && isNum(L.gstats.min) && isNum(L.gstats.max)) {
+        const mid = (L.gstats.min + L.gstats.max) / 2;
+        const kk = clamp(14 / Math.max(0.1, L.gstats.max - L.gstats.min), 1, 4);
+        L.pre = (v) => mid + (v - mid) * kk;
+      }
+
+      L.el.map.classList.toggle("opaque", L.scale === SCALES.temp || L.scale === SCALES.wind);
+      fitSeg();
+      drawBase();
+      drawLegend();
+      buildTimeline();
+      bindEvents();
+      update();
+      DWD.resize();
+    }
+
+    // pick the longest label set that keeps the segmented control on one line
+    function fitSeg() {
+      const seg = app.querySelector(".am-seg"), top = app.querySelector(".am-top"), pill = app.querySelector(".am-pill");
+      if (!seg) return;
+      const btns = Array.from(seg.querySelectorAll("button"));
+      const sets = [LONG, MID, SHORT];
+      for (let i = 0; i < sets.length; i++) {
+        btns.forEach((b) => { b.textContent = sets[i][b.dataset.param] || b.title || b.dataset.param; });
+        const oneRow = seg.offsetTop <= pill.offsetTop + 4;
+        const fits = seg.offsetWidth <= top.clientWidth + 0.5;
+        if ((L.W >= 480 ? oneRow : fits) || i === sets.length - 1) break;
+      }
+    }
+
+    function sourceText() {
+      const m = D.model || {};
+      const coll = String(m.collection_id || "").split("@")[0];
+      const run = m.reference_time || m.instance_id;
+      return [coll || "Deutscher Wetterdienst", run ? "Lauf " + F.day(run).replace(/,.*/, "") + " " + F.time(run) : null].filter(Boolean).join(" · ");
+    }
+
+    // ---- SVG layers: land + graticule (under field), borders + cities (over field) ----
+    function drawBase() {
+      const { W, H, proj, view, bb } = L;
+      const path = (pts) => "M" + pts.map(([lo, la]) => proj(lo, la).map((v) => v.toFixed(1)).join(",")).join("L") + "Z";
+      const de = path(GERMANY);
+      const under = [`<path class="am-land" d="${de}"/>`];
+      const over = [];
+
+      // graticule
+      const glabel = (x, y, txt) => `<rect class="am-glbg" x="${(x - 3).toFixed(1)}" y="${(y - 9.5).toFixed(1)}" width="${(txt.length * 5.6 + 4).toFixed(1)}" height="13" rx="4"/><text class="am-gl" x="${x.toFixed(1)}" y="${y.toFixed(1)}">${txt}</text>`;
+      const spanLon = view[2] - view[0];
+      const step = [0.25, 0.5, 1, 2, 5].find((s) => spanLon / s <= 6) || 5;
+      const glabels = [];
+      for (let lo = Math.ceil(view[0] / step) * step; lo <= view[2]; lo += step) {
+        const [x] = proj(lo, 0);
+        over.push(`<line class="am-grat" x1="${x.toFixed(1)}" y1="0" x2="${x.toFixed(1)}" y2="${H}"/>`);
+        if (x > 24 && x < W - 40) glabels.push(glabel(x + 3, H - 66, degLabel(lo, "lon")));
+      }
+      for (let la = Math.ceil(view[1] / step) * step; la <= view[3]; la += step) {
+        const [, y] = proj(0, la);
+        over.push(`<line class="am-grat" x1="0" y1="${y.toFixed(1)}" x2="${W}" y2="${y.toFixed(1)}"/>`);
+        if (y > 64 && y < H - 80) glabels.push(glabel(6, y - 4, degLabel(la, "lat")));
+      }
+      over.push(`<path class="am-border-halo" d="${de}"/><path class="am-border" d="${de}"/>`);
+
+      // data domain outline (only when the view is wider/taller than the data)
+      const [dx0, dy0] = proj(bb[0], bb[3]), [dx1, dy1] = proj(bb[2], bb[1]);
+      if (dx0 > 2 || dy0 > 2 || dx1 < W - 2 || dy1 < H - 2) {
+        over.push(`<rect class="am-domain" x="${dx0.toFixed(1)}" y="${dy0.toFixed(1)}" width="${(dx1 - dx0).toFixed(1)}" height="${(dy1 - dy0).toFixed(1)}" rx="2"/>`);
+      }
+      const spanDeg = view[2] - view[0];
+      const seenCountry = new Set();
+      COUNTRIES.forEach(([n, lo, la]) => {
+        if (seenCountry.has(n)) return;
+        const [x, y] = proj(lo, la);
+        if (x < 50 || x > W - 50 || y < 60 || y > H - 80) return;
+        if (lo >= bb[0] && lo <= bb[2] && la >= bb[1] && la <= bb[3]) return;
+        if (spanDeg > 9 && n.length > 8) return;
+        seenCountry.add(n);
+        over.push(`<text class="am-country" x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle">${n}</text>`);
+      });
+      over.push(glabels.join(""));
+
+      // cities with simple label collision avoidance
+      const boxes = [[0, 0, W, W < 480 ? 104 : 50], [0, H - 62, W, H]];
+      if (L.marker) {
+        const [mx, my] = proj(L.marker.lon, L.marker.lat);
+        boxes.push([mx - 70, my - 40, mx + 70, my + 8]);
+        if (W > 560) boxes.push([W - 196, 50, W, 210]);
+      }
+      const hit = (b) => boxes.some((o) => !(b[2] < o[0] || b[0] > o[2] || b[3] < o[1] || b[1] > o[3]));
+      const markerNames = (D.markers || []).map((m) => (m && m.name ? String(m.name).toLowerCase() : ""));
+      const cityList = BIG_CITIES.map((c) => c.concat(true)).concat(spanDeg < 5 ? SMALL_CITIES.map((c) => c.concat(false)) : []);
+      cityList.forEach(([name, lo, la, big]) => {
+        if (lo < view[0] || lo > view[2] || la < view[1] || la > view[3]) return;
+        if (!big && (lo < bb[0] || lo > bb[2] || la < bb[1] || la > bb[3])) return;
+        if (markerNames.includes(name.toLowerCase())) return;
+        if (L.marker && Math.abs(L.marker.lat - la) < 0.06 && Math.abs(L.marker.lon - lo) < 0.09) return;
+        const [x, y] = proj(lo, la);
+        const tw = name.length * (big ? 6.4 : 5.6) + 6;
+        const right = x + tw + 10 < W;
+        const box = right ? [x - 4, y - 9, x + tw + 6, y + 7] : [x - tw - 6, y - 9, x + 4, y + 7];
+        if (hit(box)) return;
+        boxes.push(box);
+        over.push(`<circle class="am-city-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${big ? 3.6 : 2.6}"/>`);
+        // dark-on-light label styling only when the whole label sits on the (opaque) raster
+        const endLon = L.unproj(right ? x + 7 + tw : x - 7 - tw, y)[0];
+        const onRaster = valueAt(0, lo, la) != null && valueAt(0, endLon, la) != null;
+        over.push(`<text class="am-city${onRaster ? " on" : ""}" x="${(right ? x + 7 : x - 7).toFixed(1)}" y="${(y + 3.8).toFixed(1)}"${right ? "" : ' text-anchor="end"'}${big ? "" : ' style="font-size:10px;font-weight:500"'}>${F.esc(name)}</text>`);
+      });
+
+      const underSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      underSvg.setAttribute("class", "am-svg");
+      underSvg.setAttribute("width", W); underSvg.setAttribute("height", H);
+      underSvg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+      underSvg.setAttribute("aria-hidden", "true");
+      underSvg.innerHTML = under.join("");
+      L.el.map.insertBefore(underSvg, L.el.canvas);
+      L.el.svg.innerHTML = over.join("");
+    }
+
+    // ---- canvas field ----------------------------------------------------------
+    function drawField() {
+      const { W, H, el } = L;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const c = el.canvas;
+      const cw = Math.round(W * dpr), ch = Math.round(H * dpr);
+      if (c.width !== cw || c.height !== ch) { c.width = cw; c.height = ch; }
+      c.style.width = W + "px"; c.style.height = H + "px";
+      const ctx = c.getContext("2d");
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, cw, ch);
+
+      const g = grid(S.t);
+      if (!g || !L.nx || !L.ny) return;
+      // evaluate bilinear field at half CSS resolution, then smooth-upscale
+      const r = 0.5;
+      const w = Math.ceil(W * r), h = Math.ceil(H * r);
+      const off = L.off || (L.off = document.createElement("canvas"));
+      off.width = w; off.height = h;
+      const octx = off.getContext("2d");
+      const img = octx.createImageData(w, h);
+      const px = img.data;
+      if (!L.cols) {
+        L.cols = new Float32Array(w); L.rows = new Float32Array(h);
+        for (let x = 0; x < w; x++) L.cols[x] = axisPos(L.lons, L.unproj((x + 0.5) / r, 0)[0]);
+        for (let y = 0; y < h; y++) L.rows[y] = axisPos(L.lats, L.unproj(0, (y + 0.5) / r)[1]);
+      }
+      const cols = L.cols, rows = L.rows;
+      const { lut, tlo, thi, tf } = L.lut;
+      const pre = L.pre;
+      const k = (LUTN - 1) / (thi - tlo || 1);
+      for (let y = 0; y < h; y++) {
+        const fy = rows[y];
+        if (fy < 0) continue;
+        for (let x = 0; x < w; x++) {
+          const fx = cols[x];
+          if (fx < 0) continue;
+          const v = sample(g, fy, fx);
+          if (v == null) continue;
+          const li = clamp(Math.round((tf(pre(v)) - tlo) * k), 0, LUTN - 1) * 4;
+          const o = (y * w + x) * 4;
+          px[o] = lut[li]; px[o + 1] = lut[li + 1]; px[o + 2] = lut[li + 2]; px[o + 3] = lut[li + 3];
+        }
+      }
+      octx.putImageData(img, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      // soften the cell-scale facets of bilinear interpolation with a blur ~1/3 grid cell
+      const cellPx = Math.min(L.W / Math.max(1, L.nx), L.H / Math.max(1, L.ny));
+      const blur = clamp(cellPx * 0.35, 0, 8) * dpr;
+      if (blur >= 1 && "filter" in ctx) ctx.filter = `blur(${blur.toFixed(1)}px)`;
+      ctx.drawImage(off, 0, 0, w, h, 0, 0, (w / r) * dpr, (h / r) * dpr);
+      if ("filter" in ctx) ctx.filter = "none";
+    }
+
+    // ---- legend ----------------------------------------------------------------
+    function legendTicks(lo, hi, tf, widthPx) {
+      const tlo = tf(lo), thi = tf(hi);
+      const pos = (v) => (tf(v) - tlo) / (thi - tlo || 1);
+      let cands;
+      if (tf === sqrtTf) cands = [0, 0.1, 0.5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 3000, 4000, 5000];
+      else {
+        const target = Math.max(3, Math.min(8, Math.floor(widthPx / 44)));
+        const raw = (hi - lo) / target;
+        const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+        const st = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw) || raw;
+        cands = [];
+        for (let v = Math.ceil(lo / st) * st; v <= hi + 1e-9; v += st) cands.push(+v.toFixed(6));
+      }
+      const minGap = 28 / Math.max(60, widthPx);
+      const out = [];
+      let last = -1e9;
+      cands.filter((v) => v >= lo - 1e-9 && v <= hi + 1e-9).forEach((v) => {
+        const q = pos(v);
+        if (q - last >= minGap) { out.push([v, q]); last = q; }
+      });
+      if (!out.length || out[0][1] > 0.001) { if (out.length && out[0][1] < minGap) out.shift(); out.unshift([lo, 0]); }
+      if (out[out.length - 1][1] < 0.999) { if (1 - out[out.length - 1][1] < minGap) out.pop(); out.push([hi, 1]); }
+      return out;
+    }
+    function drawLegend() {
+      const p = L.param, sc = L.scale;
+      const [lo, hi] = sc.legend(L.gstats);
+      const tf = sc.tf, tlo = tf(lo), thi = tf(hi);
+      const N = 32, cs = [];
+      for (let i = 0; i <= N; i++) {
+        const tv = tlo + ((thi - tlo) * i) / N;
+        const v = tf === sqrtTf ? tv * tv : tv;
+        const c = stopColor(L.lut.stops, L.pre(v));
+        cs.push(`rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${(c[3] * sc.alpha).toFixed(3)}) ${((i / N) * 100).toFixed(1)}%`);
+      }
+      const barW = Math.min(360, Math.max(160, L.W < 560 ? L.W - 70 : L.W - 330));
+      const ticks = legendTicks(lo, hi, tf, barW);
+      L.el.legend.innerHTML = `
+        <div class="am-legend-unit">${F.esc(unitOf(p))}</div>
+        <div class="am-legend-bar-wrap">
+          <div class="am-legend-bar"><div style="background:linear-gradient(90deg,${cs.join(",")})"></div>
+          </div>
+          <div class="am-legend-ticks">${ticks.map(([v, q], i) => `<span class="${i === 0 ? "l" : i === ticks.length - 1 ? "r" : ""}" style="left:${(q * 100).toFixed(1)}%">${F.num(v, Math.abs(v - Math.round(v)) > 1e-6 ? 1 : 0)}</span>`).join("")}</div>
+        </div>`;
+    }
+
+    // ---- timeline ----------------------------------------------------------------
+    function buildTimeline() {
+      const tr = L.el.track;
+      if (!tr) return;
+      const times = D.times || [];
+      const n = times.length;
+      const trackW = Math.max(60, L.W - 20 - 7 - 36 - 12 - 64 - 12 - 16);
+      const maxLabels = Math.max(2, Math.floor(trackW / 30));
+      const every = [1, 2, 3, 4, 6, 12].find((e) => Math.ceil(n / e) <= maxLabels) || 12;
+      const html = [];
+      let lastDay = null;
+      times.forEach((iso, i) => {
+        const day = F.day(iso);
+        const newDay = lastDay != null && day !== lastDay;
+        lastDay = day;
+        if (n < 2) return;
+        if (i % every !== 0 && !(newDay && (i % every) / every >= 0.6)) return;
+        if (i === n - 1 && i % every !== 0) return;
+        const left = (i / (n - 1)) * 100;
+        const lbl = newDay ? day.split(",")[0] : hourLbl(iso);
+        html.push(`<span class="am-tick${newDay ? " day" : ""}${i === 0 ? " first" : ""}" style="left:${left.toFixed(2)}%">${F.esc(lbl)}</span>`);
+      });
+      tr.querySelector(".am-ticks").innerHTML = html.join("");
+    }
+
+    // ---- per-frame update ----------------------------------------------------------
+    function update() {
+      if (!L) return;
+      drawField();
+      const p = L.param;
+      const times = D.times || [];
+      const n = times.length;
+      const t = S.t;
+      const iso = times[t];
+
+      if (L.el.tlabel) {
+        const f = n > 1 ? t / (n - 1) : 0;
+        if (L.el.track) {
+          L.el.track.querySelector(".am-fill").style.width = (f * 100).toFixed(2) + "%";
+          L.el.track.querySelector(".am-thumb").style.left = (f * 100).toFixed(2) + "%";
+          L.el.track.setAttribute("aria-valuenow", t);
+          L.el.track.setAttribute("aria-valuetext", F.dateTime(iso));
+        }
+        const tt = Date.parse(iso);
+        let tag = F.day(iso).split(",")[0];
+        if (isFinite(tt) && Math.abs(Date.now() - tt) < 30 * 60e3) tag = "Jetzt";
+        else if (D.model && D.model.reference_time && isFinite(tt)) {
+          const dh = Math.round((tt - Date.parse(D.model.reference_time)) / 3600e3);
+          if (isFinite(dh)) tag = tag + " · " + (dh === 0 ? "Start" : (dh > 0 ? "+" : "−") + Math.abs(dh) + " h");
+        }
+        L.el.tlabel.innerHTML = `<b>${F.esc(F.time(iso))}</b><span>${F.esc(tag)}</span>`;
+        if (L.el.track) {
+          L.el.play.innerHTML = DWD.icon(S.playing ? "pause" : "play", 18);
+          L.el.play.setAttribute("aria-label", S.playing ? "Pause" : "Abspielen");
+        }
+      }
+
+      const mk = (D.markers || []).filter((m) => m && isNum(m.lat) && isNum(m.lon));
+      L.el.markers.innerHTML = mk.map((m) => {
+        const [x, y] = L.proj(m.lon, m.lat);
+        if (x < -20 || x > L.W + 20 || y < -20 || y > L.H + 20) return "";
+        const v = valueAt(t, m.lon, m.lat);
+        return `<div class="am-marker" style="left:${x.toFixed(1)}px;top:${y.toFixed(1)}px">
+          <div class="am-mlabel">${m.name ? `<span>${F.esc(m.name)}</span>` : ""}<b>${F.esc(fmtShort(v, p))}</b></div>
+          <div class="am-stem"></div><div class="am-dot"></div></div>`;
+      }).join("");
+
+      const fs = frameStats(t);
+      if (L.el.info) {
+        const m = L.marker;
+        const v = valueAt(t, m.lon, m.lat);
+        if (!L.peak) {
+          let best = null;
+          times.forEach((_, i) => { const x = valueAt(i, m.lon, m.lat); if (isNum(x) && (!best || x > best[0])) best = [x, i]; });
+          L.peak = best || [null, 0];
+        }
+        const big = isNum(v) ? F.num(v, decFor(v, p)) : "–";
+        L.el.info.innerHTML = `
+          <div class="am-eyebrow">${F.esc(m.name || "Standort")} · ${F.esc(LONG[p.name] || p.label || "")}</div>
+          <div class="am-big">${big}<small>${F.esc(unitOf(p))}</small></div>
+          <div class="am-row"><span>Gebiet min</span><b>${F.esc(fmtVal(fs && fs.min, p))}</b></div>
+          <div class="am-row"><span>Gebiet max</span><b>${F.esc(fmtVal(fs && fs.max, p))}</b></div>
+          <div class="am-row"><span>Gebietsmittel</span><b>${F.esc(fmtVal(fs && fs.mean, p))}</b></div>
+          <div class="am-row"><span>Spitze ${F.esc(hourLbl(times[L.peak[1]]))} Uhr</span><b class="${L.peak[1] === t ? "up" : ""}">${F.esc(fmtVal(L.peak[0], p))}</b></div>`;
+      }
+      const NOTE = { precip: [0.05, "Kein Niederschlag"], cape: [50, "Keine nennenswerte Labilität"], cloud: [10, "Wolkenfrei"] };
+      const nt = NOTE[p.scale];
+      const empty = nt && (!fs || fs.max < nt[0]);
+      L.el.note.hidden = !empty;
+      if (empty) L.el.note.innerHTML = `${DWD.icon(p.scale === "cloud" ? "sun" : p.scale === "cape" ? "bolt" : "drop", 15)}${F.esc(nt[1])} um ${F.esc(F.time(iso))} Uhr`;
+      const gs = L.gstats;
+      L.el.mm.innerHTML = fs
+        ? `${F.esc(F.time(iso))} Uhr im Gebiet <b>${F.esc(fmtShort(fs.min, p))}</b> bis <b>${F.esc(fmtShort(fs.max, p))}</b>`
+        : `Bereich <b>${F.esc(fmtShort(gs.min, p))}</b> bis <b>${F.esc(fmtShort(gs.max, p))}</b>`;
+      if (S.hoverXY) showHover(S.hoverXY[0], S.hoverXY[1]);
+    }
+
+    // ---- interaction ------------------------------------------------------------------
+    function setT(t) {
+      const n = (D.times || []).length;
+      const nt = clamp(Math.round(t), 0, Math.max(0, n - 1));
+      if (nt !== S.t) { S.t = nt; update(); }
+    }
+    function stopPlay() { S.playing = false; if (S.timer) clearInterval(S.timer); S.timer = null; }
+    function togglePlay() {
+      const n = (D.times || []).length;
+      if (S.playing) { stopPlay(); update(); return; }
+      if (n < 2) return;
+      S.playing = true;
+      if (S.t >= n - 1) S.t = 0;
+      S.timer = setInterval(() => {
+        const m = (D.times || []).length;
+        if (!S.playing || m < 2) { stopPlay(); return; }
+        S.t = (S.t + 1) % m;
+        update();
+      }, 750);
+      update();
+    }
+    function hideHover() {
+      S.hoverXY = null;
+      if (L && L.el) { L.el.hover.style.display = "none"; L.el.cross.style.display = "none"; }
+    }
+    function showHover(x, y) {
+      const { hover, cross } = L.el;
+      const [lon, lat] = L.unproj(x, y);
+      const v = valueAt(S.t, lon, lat);
+      if (v == null) { hover.style.display = "none"; cross.style.display = "none"; return; }
+      hover.innerHTML = `<b>${F.esc(fmtVal(v, L.param))}</b><span>${degLabel(Math.round(lat * 100) / 100, "lat")} · ${degLabel(Math.round(lon * 100) / 100, "lon")}</span>`;
+      hover.style.display = "block";
+      cross.style.display = "block";
+      cross.style.left = x + "px"; cross.style.top = y + "px";
+      const hw = hover.offsetWidth, hh = hover.offsetHeight;
+      let hx = x + 14, hy = y - hh - 10;
+      if (hx + hw > L.W - 6) hx = x - hw - 14;
+      if (hx < 6) hx = 6;
+      if (hy < 6) hy = y + 14;
+      hover.style.left = hx + "px"; hover.style.top = hy + "px";
+    }
+
+    function bindEvents() {
+      const { map, play, track } = L.el;
+      map.addEventListener("pointermove", (e) => {
+        if (e.target.closest && e.target.closest(".am-top, .am-time, .am-info, .am-loading")) { hideHover(); return; }
+        const r = map.getBoundingClientRect();
+        S.hoverXY = [e.clientX - r.left, e.clientY - r.top];
+        showHover(S.hoverXY[0], S.hoverXY[1]);
+      });
+      map.addEventListener("pointerleave", hideHover);
+
+      app.querySelectorAll(".am-seg button").forEach((b) => b.addEventListener("click", () => switchParam(b.dataset.param)));
+      if (play && track) play.addEventListener("click", togglePlay);
+      if (track) {
+        const pick = (e) => {
+          const r = track.getBoundingClientRect();
+          const n = (D.times || []).length;
+          setT(((e.clientX - r.left) / Math.max(1, r.width)) * (n - 1));
+        };
+        let drag = false;
+        track.addEventListener("pointerdown", (e) => {
+          drag = true;
+          if (S.playing) { stopPlay(); update(); }
+          try { track.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+          pick(e);
+        });
+        track.addEventListener("pointermove", (e) => { if (drag) pick(e); });
+        track.addEventListener("pointerup", () => { drag = false; });
+        track.addEventListener("pointercancel", () => { drag = false; });
+        track.addEventListener("keydown", (e) => {
+          const n = (D.times || []).length;
+          const k = e.key;
+          if (k === " " || k === "Enter") { togglePlay(); e.preventDefault(); return; }
+          let to = null;
+          if (k === "ArrowRight" || k === "ArrowUp") to = S.t + 1;
+          else if (k === "ArrowLeft" || k === "ArrowDown") to = S.t - 1;
+          else if (k === "Home") to = 0;
+          else if (k === "End") to = n - 1;
+          if (to == null) return;
+          e.preventDefault();
+          if (S.playing) stopPlay();
+          setT(to);
+          update();
+        });
+      }
+    }
+
+    function buildArgs(param) {
+      let args;
+      if (origArgs && typeof origArgs === "object" && Object.keys(origArgs).length) args = Object.assign({}, origArgs);
+      else {
+        args = {};
+        if (Array.isArray(D.bbox) && D.bbox.length === 4 && D.bbox.every(isNum)) args.bbox = D.bbox.map((v) => +v.toFixed(4)).join(",");
+        const m = (D.markers || [])[0];
+        if (m && m.name) args.location_name = m.name;
+        if ((D.times || []).length > 1) args.hours = D.times.length - 1;
+      }
+      args.parameter = param;
+      return args;
+    }
+
+    async function switchParam(name) {
+      if (!D || S.loading || !name || (D.parameter && D.parameter.name === name)) return;
+      const keepPlaying = S.playing;
+      stopPlay();
+      S.loading = name;
+      S.error = null;
+      render();
+      try {
+        await DWD.refresh("show_area_map", buildArgs(name)); // re-renders via onData
+        S.loading = null;
+        render();
+        if (keepPlaying) togglePlay();
+      } catch (e) {
+        S.loading = null;
+        S.error = "Parameter konnte nicht geladen werden: " + ((e && e.message) || "Unbekannter Fehler");
+        render();
+      }
+    }
+
+    DWD.onData((data) => {
+      if (!data || typeof data !== "object") return;
+      const prev = D;
+      D = data;
+      if (prev && prev.parameter && data.parameter && prev.parameter.name !== data.parameter.name) { S.loading = null; S.error = null; }
+      if (!prev) S.t = 0;
+      render();
+    });
+    DWD.onContext(() => { if (D) render(); });
+
+    if (typeof ResizeObserver !== "undefined") {
+      let raf = 0;
+      new ResizeObserver(() => {
+        if (!D) return;
+        if (Math.abs(app.clientWidth - S.lastW) < 1) return;
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(render);
+      }).observe(app);
+    }
+    // theme flips (data-theme attribute) need a colour-table rebuild
+    new MutationObserver(() => { if (D) render(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  })();
+  </script>
+</body>
+</html>

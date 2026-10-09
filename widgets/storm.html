@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DWD · Gewitterrisiko</title>
+  <!--DWD:SHARED-->
+  <style>
+    :root { --cape: var(--temp); --lpi: var(--storm, #7c5cd6); --on-1: #3b3000; --on-2: #3d1f00; --on-3: #ffffff; }
+    .hd-text { min-width: 0; }
+    .hd-text .dwd-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* hero */
+    .hero {
+      display: flex; align-items: center; gap: 12px; padding: 8px 12px 8px 8px; border-radius: 14px; margin-bottom: 10px;
+      background: color-mix(in srgb, var(--lvl) 13%, var(--card)); border: 1px solid color-mix(in srgb, var(--lvl) 45%, var(--line));
+    }
+    .badge {
+      flex: none; min-width: 54px; height: 54px; padding: 0 8px; border-radius: 11px; display: grid; place-items: center; align-content: center; gap: 1px; white-space: nowrap;
+      background: var(--lvl); color: var(--on); font-weight: 800; font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+    }
+    .hero-tx { min-width: 0; flex: 1; }
+    .hero-h { font-size: 16px; font-weight: 750; letter-spacing: -0.01em; line-height: 1.2; }
+    .hero-s { font-size: 12px; color: var(--ink-2); margin-top: 1px; }
+    .advice {
+      display: inline-flex; align-items: center; gap: 6px; margin-top: 5px; padding: 3px 10px 3px 8px; border-radius: 999px;
+      background: var(--card); border: 1px solid color-mix(in srgb, var(--lvl) 50%, var(--line)); font-size: 12.5px; font-weight: 650; color: var(--ink);
+      max-width: 100%;
+    }
+    .advice span { overflow: hidden; text-overflow: ellipsis; }
+    .advice .dwd-icon { color: var(--lvl-ink); }
+    .scale { flex: none; display: flex; flex-direction: column-reverse; gap: 3px; }
+    .scale i { width: 26px; height: 7px; border-radius: 3px; background: var(--warn-0); opacity: .3; }
+    .scale i.on { opacity: 1; }
+
+    /* KPIs */
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 8px; }
+    .kpi { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 6px 9px; border: 1px solid var(--line); border-radius: 12px; }
+    .kpi-ic { width: 26px; height: 26px; flex: none; display: grid; place-items: center; border-radius: 8px; background: var(--dwd-lime-soft); color: var(--lime-ink); }
+    .kpi-tx { min-width: 0; }
+    .kpi-v { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; white-space: nowrap; }
+    .kpi-v small { font-size: 11px; font-weight: 600; color: var(--ink-2); margin-left: 2px; }
+    .kpi-l { font-size: 10.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* chart */
+    .chart-wrap { position: relative; }
+    .sec-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .sec-t { font-size: 12.5px; font-weight: 650; color: var(--ink-2); }
+    svg.chart { display: block; width: 100%; overflow: visible; }
+    svg.chart .grid { stroke: var(--line); }
+    svg.chart .ptitle { font-size: 10.5px; font-weight: 650; fill: var(--ink-2); }
+    svg.chart .bolt { color: var(--warn-3); }
+    svg.chart .hit { fill: transparent; cursor: crosshair; }
+    .tip {
+      position: absolute; pointer-events: none; z-index: 2; min-width: 160px;
+      background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow);
+      padding: 8px 10px; font-size: 11.5px; display: none;
+    }
+    .tip b.t { display: block; font-size: 12px; margin-bottom: 4px; }
+    .tip .r { display: flex; justify-content: space-between; gap: 12px; color: var(--ink-2); }
+    .tip .r b { color: var(--ink); font-weight: 650; }
+    .tip .lv { display: inline-flex; align-items: center; gap: 5px; font-weight: 650; margin-bottom: 4px; }
+
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; flex: none; }
+    .legend { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .legend .dwd-chip { padding: 3px 9px; font-size: 11px; gap: 5px; }
+    .legend .dwd-chip b { font-weight: 650; color: var(--ink); }
+    .legend .dot { width: 9px; height: 9px; }
+    .legend .bk { margin-left: auto; }
+    .actions { display: none; margin-top: 12px; }
+    .narrow .actions { display: flex; }
+    .narrow .dwd-footer .dwd-btn { display: none; }
+    .dwd-footer .dwd-btn { flex: none; }
+    .foot-l { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+    .foot-l span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dwd-footer > span:last-child { white-space: nowrap; }
+
+    .narrow .legend { gap: 4px; flex-wrap: nowrap; }
+    .narrow .legend .dwd-chip { padding: 2px 7px; gap: 4px; font-size: 10.5px; }
+    .narrow .kpi-ic { display: none; }
+    .narrow .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .narrow .legend { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .narrow .scale { display: none; }
+    .narrow .badge { min-width: 50px; max-width: 70px; height: 54px; padding: 0 5px; white-space: normal; text-align: center; font-size: 9px; line-height: 1.15; }
+    .narrow .hero { gap: 12px; padding: 12px; }
+    .narrow .hero-h { font-size: 15.5px; }
+    .narrow .advice { white-space: normal; border-radius: 10px; }
+    .narrow .actions .dwd-btn { width: 100%; justify-content: center; }
+  </style>
+</head>
+<body>
+  <div class="dwd-card">
+    <div class="dwd-skeleton">Lade DWD-Daten …</div>
+    <div class="dwd-content" id="app"></div>
+  </div>
+  <script>
+  (function () {
+    "use strict";
+    const app = document.getElementById("app");
+    const F = DWD.fmt, esc = F.esc;
+    const isNum = (v) => typeof v === "number" && isFinite(v);
+    const DEF_LEVELS = ["Keine Gefahr", "Gering", "Erhöht", "Hoch"];
+    const HEAD = ["Keine Gewittergefahr", "Geringes Gewitterrisiko", "Erhöhtes Gewitterrisiko", "Hohes Gewitterrisiko"];
+    const DESC = ["Stabile Schichtung", "Vereinzelt Blitze möglich", "Gewitter wahrscheinlich", "Kräftige Gewitter, Hagel, Sturmböen"];
+    const SHORT = ["", "einzelne Blitze", "Gewitter", "Unwetter"];
+    const LVL_INK = ["var(--ink-3)", "#b08a00", "#d06a00", "var(--warn-3)"];
+    const ON = ["var(--ink)", "var(--on-1)", "var(--on-2)", "var(--on-3)"];
+    let D = null, steps = [], lastW = 0, G = null;
+
+    const hh = (iso) => (iso ? F.time(iso).slice(0, 2) : "–");
+    const localHour = F.localHour || ((iso) => Number(new Date(iso).toLocaleString("en-GB", { hour: "2-digit", hour12: false, timeZone: "Europe/Berlin" })) % 24);
+    const dayKey = (iso) => new Date(iso).toLocaleDateString("de-DE", { timeZone: "Europe/Berlin" });
+    const wday = (iso) => new Date(iso).toLocaleDateString("de-DE", { weekday: "short", timeZone: "Europe/Berlin" }).replace(".", "");
+    const shortModel = (m) => (m && m.collection_id ? String(m.collection_id).split("@")[0] : "DWD");
+    const riskOf = (s) => (isNum(s.risk) ? Math.max(0, Math.min(3, Math.round(s.risk))) : 0);
+    const isThunder = (s) => isNum(s.ww) && s.ww >= 95;
+
+    function levelLabel(l) {
+      const lv = (D.levels || []).find((x) => x && x.level === l);
+      return (lv && lv.label) || DEF_LEVELS[l] || "–";
+    }
+
+    // contiguous window of risk >= 2 containing the peak (else the first one)
+    function riskWindow() {
+      const wins = [];
+      let cur = null;
+      steps.forEach((s, i) => {
+        if (riskOf(s) >= 2) { if (!cur) cur = { a: i, b: i }; else cur.b = i; }
+        else if (cur) { wins.push(cur); cur = null; }
+      });
+      if (cur) wins.push(cur);
+      if (!wins.length) return null;
+      const pk = steps.findIndex((s) => s.time === (D.summary && D.summary.max_risk_time));
+      return wins.find((w) => pk >= w.a && pk <= w.b) || wins[0];
+    }
+    function windowText(w) {
+      const t0 = steps[w.a].time;
+      const t1 = new Date(Date.parse(steps[w.b].time) + 3600e3).toISOString();
+      const pre = dayKey(t0) === dayKey(steps[0].time) ? "" : wday(t0) + " ";
+      return pre + hh(t0) + "–" + hh(t1) + " Uhr";
+    }
+
+    function hero(maxR, peakT) {
+      const w = riskWindow();
+      let sub, advice, adviceIcon = "warn";
+      if (maxR >= 2 && w) {
+        const n = w.b - w.a + 1;
+        sub = "Höhepunkt " + (peakT ? wday(peakT) + " " + F.time(peakT) + " Uhr" : "–") + " · " + n + (n === 1 ? " Stunde" : " Stunden") + " mit erhöhtem Risiko";
+        advice = (maxR >= 3 ? "Außenarbeiten " : "Aktivitäten im Freien ") + windowText(w) + " verschieben";
+      } else if (maxR === 1) {
+        const i1 = steps.findIndex((s) => riskOf(s) >= 1);
+        sub = "Leicht labile Luftschichtung ab " + (i1 >= 0 ? F.time(steps[i1].time) + " Uhr" : "–");
+        advice = "Vereinzelt Blitze möglich – Wetterlage im Blick behalten";
+      } else {
+        const cmax = steps.reduce((m, s) => (isNum(s.cape_jkg) && s.cape_jkg > m ? s.cape_jkg : m), 0);
+        sub = "Kein Gewittersignal in den nächsten " + Math.max(1, steps.length - 1) + " Stunden · CAPE max. " + F.num(cmax) + " J/kg";
+        advice = "Außenaktivitäten unbedenklich";
+        adviceIcon = "sun";
+      }
+      const scale = [0, 1, 2, 3].map((l) => '<i class="' + (l <= maxR ? "on" : "") + '" style="background:var(--warn-' + l + ')"></i>').join("");
+      const lvlColor = maxR === 0 ? "var(--dwd-lime)" : "var(--warn-" + maxR + ")";
+      return '<div class="hero' + (maxR === 0 ? " calm" : "") + '" style="--lvl:' + lvlColor + ";--on:" + (maxR === 0 ? "#1f3a0a" : ON[maxR]) + ";--lvl-ink:" + (maxR === 0 ? "var(--lime-ink)" : LVL_INK[maxR]) + '">' +
+        '<div class="badge">' + DWD.icon(maxR >= 2 ? "thunder" : maxR === 1 ? "cloud" : "sun", 26) + "<span>" + esc(levelLabel(maxR)) + "</span></div>" +
+        '<div class="hero-tx"><div class="hero-h">' + HEAD[maxR] + '</div><div class="hero-s">' + esc(sub) + "</div>" +
+        '<div class="advice">' + DWD.icon(adviceIcon, 15) + "<span>" + esc(advice) + "</span></div></div>" +
+        '<div class="scale" role="img" aria-label="Risikostufe ' + maxR + ' von 3">' + scale + "</div></div>";
+    }
+
+    function niceMax(v, n) {
+      const raw = v / n, p = Math.pow(10, Math.floor(Math.log10(raw || 1))), q = raw / p;
+      const st = (q <= 1 ? 1 : q <= 2 ? 2 : q <= 2.5 ? 2.5 : q <= 5 ? 5 : 10) * p;
+      return { max: Math.ceil(v / st) * st, step: st };
+    }
+
+    function chartSVG(width) {
+      const n = steps.length, padL = 40, padR = 8, W = Math.max(260, width);
+      const pw = W - padL - padR, cw = pw / n;
+      const X = (i) => padL + (i + 0.5) * cw;
+      const anyT = steps.some(isThunder);
+      const yBolt = 0, yStrip = anyT ? 16 : 2, hStrip = 20, yCape = yStrip + hStrip + 24, hCape = 56, yLpi = yCape + hCape + 22, hLpi = 36, yAx = yLpi + hLpi;
+      const H = yAx + 18;
+      const out = [];
+      // heat strip + lightning
+      out.push('<text class="ptitle" x="0" y="' + (yStrip + hStrip / 2) + '" dominant-baseline="central">Risiko</text>');
+      if (steps.some(isThunder)) out.push('<text class="ptitle" x="0" y="' + (yBolt + 8) + '" dominant-baseline="central" style="font-size:9.5px;font-weight:600;fill:var(--ink-3)">Gewitter<title>Gewitter gemeldet (WW ≥ 95)</title></text>');
+      const gap = cw > 10 ? 2 : 1;
+      steps.forEach((s, i) => {
+        const r = riskOf(s);
+        out.push('<rect x="' + (padL + i * cw + gap / 2).toFixed(1) + '" y="' + yStrip + '" width="' + Math.max(1, cw - gap).toFixed(1) + '" height="' + hStrip + '" rx="' + Math.min(4, cw / 3).toFixed(1) + '" fill="var(--warn-' + r + ')"' + (isNum(s.risk) ? "" : ' opacity="0.35"') + "/>");
+        if (isThunder(s)) {
+          const sz = Math.min(15, Math.max(11, cw));
+          out.push('<g class="bolt" transform="translate(' + (X(i) - sz / 2).toFixed(1) + "," + (yBolt + 1) + ") scale(" + (sz / 24).toFixed(3) + ')"><path d="M13 2.5L5 13.5h6l-1 8 8-11h-6z" fill="currentColor"/></g>');
+        }
+      });
+      function panel(key, y0, h, color, title, unit, thresholds, kind) {
+        let vmax = 0;
+        steps.forEach((s) => { if (isNum(s[key]) && s[key] > vmax) vmax = s[key]; });
+        const nm = niceMax(Math.max(vmax * 1.08, thresholds[0] * 1.1), 3);
+        const Y = (v) => y0 + h - (Math.min(v, nm.max) / nm.max) * h;
+        out.push('<text class="ptitle" x="0" y="' + (y0 - 10) + '">' + title + (unit ? ' <tspan style="fill:var(--ink-3);font-weight:500">' + unit + "</tspan>" : "") + "</text>");
+        for (let v = 0; v <= nm.max + 1e-9; v += nm.step) {
+          out.push('<line class="grid" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '"/>');
+          if (v > 0) out.push('<text x="' + (padL - 5) + '" y="' + Y(v).toFixed(1) + '" text-anchor="end" dominant-baseline="central">' + F.num(v, nm.step < 1 ? 1 : 0) + "</text>");
+        }
+        thresholds.forEach((t, k) => {
+          if (t > nm.max || vmax <= 0) return;
+          out.push('<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + Y(t).toFixed(1) + '" y2="' + Y(t).toFixed(1) + '" stroke="var(--warn-' + (k + 2) + ')" stroke-width="1.2" stroke-dasharray="4 3"/>');
+        });
+        if (kind === "area") {
+          let d = "", a = "", run = [];
+          const flush = () => {
+            if (run.length) {
+              const pts = run.map((i) => X(i).toFixed(1) + "," + Y(steps[i][key]).toFixed(1));
+              d += "M" + pts.join("L");
+              if (run.length > 1) a += "M" + X(run[0]).toFixed(1) + "," + (y0 + h) + "L" + pts.join("L") + "L" + X(run[run.length - 1]).toFixed(1) + "," + (y0 + h) + "Z";
+            }
+            run = [];
+          };
+          steps.forEach((s, i) => { if (isNum(s[key])) run.push(i); else flush(); });
+          flush();
+          out.push('<path d="' + a + '" fill="' + color + '" opacity="0.16"/>');
+          out.push('<path d="' + d + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>');
+        } else {
+          const bw = Math.max(2, cw - Math.max(2, cw * 0.3));
+          steps.forEach((s, i) => {
+            const v = s[key];
+            if (!isNum(v) || v <= 0) return;
+            const y = Y(v), x0 = X(i) - bw / 2, x1 = X(i) + bw / 2, b = y0 + h;
+            const r = Math.min(3, bw / 2, b - y);
+            out.push('<path d="M' + x0.toFixed(1) + "," + b + "V" + (y + r).toFixed(1) + "Q" + x0.toFixed(1) + "," + y.toFixed(1) + " " + (x0 + r).toFixed(1) + "," + y.toFixed(1) +
+              "H" + (x1 - r).toFixed(1) + "Q" + x1.toFixed(1) + "," + y.toFixed(1) + " " + x1.toFixed(1) + "," + (y + r).toFixed(1) + "V" + b + 'Z" fill="' + color + '"/>');
+          });
+        }
+        out.push('<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + (y0 + h) + '" y2="' + (y0 + h) + '" stroke="var(--ink-3)" stroke-opacity="0.5"/>');
+      }
+      panel("cape_jkg", yCape, hCape, "var(--cape)", "CAPE", "J/kg", [1000, 2000], "area");
+      panel("lpi", yLpi, hLpi, "var(--lpi)", "Blitzpotenzial", "LPI", [2, 4], "bar");
+      const every = cw * 3 >= 30 ? 3 : 6;
+      steps.forEach((s, i) => {
+        if (localHour(s.time) % every === 0) out.push('<text x="' + X(i).toFixed(1) + '" y="' + (yAx + 14) + '" text-anchor="middle">' + hh(s.time) + "</text>");
+        if (i > 0 && localHour(s.time) === 0) {
+          const x = padL + i * cw;
+          out.push('<line x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + (yCape - 6) + '" y2="' + yAx + '" stroke="var(--ink-3)" stroke-opacity="0.35"/>');
+          out.push('<text x="' + (x + 4).toFixed(1) + '" y="' + (yCape - 10) + '" style="font-size:9.5px">' + esc(wday(s.time)) + "</text>");
+        }
+      });
+      if (!steps.some((s) => isNum(s.lpi) && s.lpi > 0)) {
+        // opaque pill on top of grid/day dividers
+        const txt = pw >= 320 ? "Kein Blitzpotenzial im Vorhersagezeitraum" : "Kein Blitzpotenzial";
+        const tw = txt.length * 6.1 + 22, cx = padL + pw / 2, cy = yLpi + hLpi / 2;
+        out.push('<rect x="' + (cx - tw / 2).toFixed(1) + '" y="' + (cy - 10) + '" width="' + tw.toFixed(1) + '" height="20" rx="10" fill="var(--card)" stroke="var(--line)"/>');
+        out.push('<text x="' + cx.toFixed(1) + '" y="' + cy + '" text-anchor="middle" dominant-baseline="central" style="font-size:11px;font-weight:600;fill:var(--ink-2)">' + txt + "</text>");
+      }
+      out.push('<g id="cur" style="display:none;pointer-events:none"><rect id="cur-r" y="' + (yStrip - 4) + '" height="' + (yAx - yStrip + 4) + '" rx="5" fill="var(--ink)" opacity="0.07"/></g>');
+      out.push('<rect class="hit" id="hit" x="' + padL + '" y="0" width="' + pw + '" height="' + yAx + '"/>');
+      G = { X, cw, padL, W, yStrip, yAx };
+      return '<svg class="chart" id="chart" viewBox="0 0 ' + W + " " + H + '" height="' + H + '" role="img" aria-label="Stündliches Gewitterrisiko, CAPE und LPI">' + out.join("") + "</svg>";
+    }
+
+    function showTip(i) {
+      const tip = app.querySelector("#tip"), cur = app.querySelector("#cur"), rr = app.querySelector("#cur-r");
+      if (!tip || !G) return;
+      if (i == null || !steps[i]) { tip.style.display = "none"; cur.style.display = "none"; return; }
+      const s = steps[i], r = riskOf(s), ww = F.ww(s.ww);
+      tip.innerHTML = '<b class="t">' + esc(wday(s.time) + " " + F.time(s.time)) + " Uhr</b>" +
+        '<div class="lv"><i class="dot" style="background:var(--warn-' + r + ')"></i>Risiko: ' + esc(levelLabel(r)) + "</div>" +
+        '<div class="r"><span>CAPE</span><b>' + F.num(s.cape_jkg) + " J/kg</b></div>" +
+        '<div class="r"><span>LPI</span><b>' + F.num(s.lpi, 1) + "</b></div>" +
+        '<div class="r"><span>Böen</span><b>' + F.kmh(s.gust_kmh) + "</b></div>" +
+        '<div class="r"><span>Niederschlag</span><b>' + F.mm(s.precip_mm) + "</b></div>" +
+        (isNum(s.hail_mm) && s.hail_mm > 0 ? '<div class="r"><span>Hagel</span><b>' + F.num(s.hail_mm, 1) + " mm</b></div>" : "") +
+        '<div class="r"><span>Wetter</span><b>' + esc(ww.label) + "</b></div>";
+      tip.style.display = "block";
+      const svg = app.querySelector("#chart"), wrap = svg.parentNode;
+      const scale = svg.getBoundingClientRect().width / G.W;
+      const x = G.X(i) * scale;
+      const tw = tip.offsetWidth;
+      let left = x + 16;
+      if (left + tw > wrap.clientWidth) left = x - 16 - tw;
+      tip.style.left = Math.max(0, left) + "px";
+      tip.style.top = (G.yStrip + 32) * scale + "px";
+      cur.style.display = "";
+      rr.setAttribute("x", G.padL + i * G.cw); rr.setAttribute("width", G.cw);
+    }
+
+    function render(data) {
+      if (!data) return;
+      D = data;
+      steps = Array.isArray(data.steps) ? data.steps.filter((s) => s && s.time) : [];
+      const width = app.clientWidth || 600;
+      lastW = width;
+      const narrow = width < 520;
+      app.classList.toggle("narrow", narrow);
+      const loc = (data.location && data.location.name) || (data.location ? F.num(data.location.lat, 2) + "° N, " + F.num(data.location.lon, 2) + "° O" : "");
+      const m = data.model || {}, sum = data.summary || {};
+
+      const header = '<div class="dwd-header"><div class="dwd-badge-icon">' + DWD.icon("bolt", 18) + "</div>" +
+        '<div class="hd-text"><div class="dwd-title">Gewitterrisiko' + (loc ? " · " + esc(loc) : "") + "</div>" +
+        '<div class="dwd-sub">' + esc(shortModel(m)) + " · Lauf " + esc(m.reference_time ? wday(m.reference_time) + " " + F.time(m.reference_time) : "–") + " · Stand " + esc(F.time(data.generated_at)) + "</div></div></div>";
+      const footer = '<div class="dwd-footer"><span class="foot-l"><span class="dwd-logo">DWD</span><span>' + esc(data.source || "Deutscher Wetterdienst") + "</span></span>" +
+        '<button class="dwd-btn ask" type="button">' + DWD.icon("chat", 14) + "Bestes Zeitfenster ohne Gewitter?</button></div>";
+
+      if (!steps.length) {
+        app.innerHTML = header + '<div class="dwd-error">Für diesen Ort liegen keine Konvektionsdaten vor.</div>' + footer;
+        G = null;
+        return;
+      }
+
+      const mx = (k) => { let v = null; steps.forEach((s) => { if (isNum(s[k]) && (v == null || s[k] > v)) v = s[k]; }); return v; };
+      const maxR = isNum(sum.max_risk) ? Math.max(0, Math.min(3, Math.round(sum.max_risk))) : Math.max.apply(null, steps.map(riskOf));
+      let peakT = sum.max_risk_time;
+      if (!peakT && maxR > 0) { const k = steps.findIndex((s) => riskOf(s) === maxR); peakT = k >= 0 ? steps[k].time : null; }
+      const capeMax = isNum(sum.max_cape_jkg) ? sum.max_cape_jkg : mx("cape_jkg");
+      const lpiMax = isNum(sum.max_lpi) ? sum.max_lpi : mx("lpi");
+      const gustMax = isNum(sum.max_gust_kmh) ? sum.max_gust_kmh : mx("gust_kmh");
+      const th = isNum(sum.thunder_hours) ? sum.thunder_hours : steps.filter((s) => isThunder(s) || (isNum(s.lpi) && s.lpi > 0)).length;
+
+      const kpi = (ic, v, unit, l) => '<div class="kpi"><span class="kpi-ic">' + DWD.icon(ic, 16) + '</span><span class="kpi-tx"><div class="kpi-v">' + v + (unit && v !== "–" ? "<small>" + unit + "</small>" : "") + '</div><div class="kpi-l">' + l + "</div></span></div>";
+      const kpis = '<div class="kpis">' +
+        kpi("gauge", F.num(capeMax), "J/kg", "Max. CAPE") +
+        kpi("bolt", F.num(lpiMax, 1), "", "Max. LPI") +
+        kpi("wind", F.num(gustMax), "km/h", "Max. Böe") +
+        kpi("clock", F.num(th), "h", "Gewitterstunden") + "</div>";
+
+      const legend = '<div class="legend" aria-label="Legende Risikostufen">' + [0, 1, 2, 3].map((l) => '<span class="dwd-chip" title="' + esc(DESC[l]) + '"><i class="dot" style="background:var(--warn-' + l + ')"></i><b>' + esc(levelLabel(l)) + "</b>" + (narrow || !SHORT[l] ? "" : '<span class="ds">· ' + SHORT[l] + "</span>") + "</span>").join("") +
+ "</div>";
+      const place = (data.location && data.location.name) || "meinen Standort";
+      const action = '<div class="actions"><button class="dwd-btn ask" type="button">' + DWD.icon("chat", 15) + "Bestes Zeitfenster ohne Gewitter?</button></div>";
+
+      app.innerHTML = header + hero(maxR, peakT) + kpis +
+        '<div class="chart-wrap">' + chartSVG(width) + '<div class="tip" id="tip"></div></div>' +
+        legend + action + footer;
+
+      const hit = app.querySelector("#hit"), svg = app.querySelector("#chart");
+      const pick = (ev) => {
+        const r = svg.getBoundingClientRect();
+        const x = ((ev.clientX - r.left) / r.width) * G.W;
+        const i = Math.floor((x - G.padL) / G.cw);
+        showTip(i >= 0 && i < steps.length ? i : null);
+      };
+      hit.addEventListener("pointermove", pick);
+      hit.addEventListener("pointerdown", pick);
+      hit.addEventListener("pointerleave", () => showTip(null));
+      app.querySelectorAll(".ask").forEach((b) => b.addEventListener("click", () => {
+        DWD.sendMessage("Wann ist heute das beste Zeitfenster ohne Gewitter für " + place + "?").catch(() => {});
+      }));
+      DWD.resize();
+    }
+
+    DWD.onData((data) => render(data));
+    let rq = 0;
+    new ResizeObserver(() => {
+      const w = app.clientWidth;
+      if (!D || Math.abs(w - lastW) < 2) return;
+      cancelAnimationFrame(rq);
+      rq = requestAnimationFrame(() => render(D));
+    }).observe(app);
+  })();
+  </script>
+</body>
+</html>

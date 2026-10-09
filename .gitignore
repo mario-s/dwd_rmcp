@@ -1,1 +1,9 @@
 /target
+.DS_Store
+node_modules/
+
+# Large live-captured widget fixtures; regenerate with
+# `node widgets/preview/capture.mjs --live --update-fixtures --only area-map,area-map-precip,compare`
+widgets/fixtures/area-map.json
+widgets/fixtures/area-map.*.json
+widgets/fixtures/compare.json

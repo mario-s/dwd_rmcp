@@ -1,0 +1,366 @@
+{
+  "collections": [
+    {
+      "bbox": [
+        -4.161636,
+        43.044051,
+        20.544435,
+        58.16465
+      ],
+      "description": "Rapid Update Cycle des hochauflösenden Regionalmodells ICON-D2 (ca. 2,2 km, Deutschland und Nachbarländer), stündlich neu gerechnet, Vorhersage bis +27 h. Bodennahe Felder (single level).",
+      "id": "ICON-D2-RUC@single_level",
+      "instances": [
+        "2026-10-09T08:00:00Z",
+        "2026-10-09T07:00:00Z",
+        "2026-10-09T06:00:00Z",
+        "2026-10-09T05:00:00Z",
+        "2026-10-09T04:00:00Z",
+        "2026-10-09T03:00:00Z",
+        "2026-10-09T02:00:00Z",
+        "2026-10-09T01:00:00Z",
+        "2026-10-09T00:00:00Z",
+        "2026-10-08T23:00:00Z",
+        "2026-10-08T22:00:00Z",
+        "2026-10-08T21:00:00Z",
+        "2026-10-08T20:00:00Z",
+        "2026-10-08T19:00:00Z",
+        "2026-10-08T18:00:00Z",
+        "2026-10-08T17:00:00Z",
+        "2026-10-08T16:00:00Z",
+        "2026-10-08T15:00:00Z",
+        "2026-10-08T14:00:00Z",
+        "2026-10-08T13:00:00Z",
+        "2026-10-08T12:00:00Z",
+        "2026-10-08T11:00:00Z",
+        "2026-10-08T10:00:00Z",
+        "2026-10-08T09:00:00Z"
+      ],
+      "latest_instance": "2026-10-09T08:00:00Z",
+      "parameters": [
+        {
+          "label": "Diffuse Sonneneinstrahlung",
+          "name": "ASWDIFD_S",
+          "unit": "W/m²"
+        },
+        {
+          "label": "Direkte Sonneneinstrahlung",
+          "name": "ASWDIR_S",
+          "unit": "W/m²"
+        },
+        {
+          "label": "CAPE (Mixed Layer)",
+          "name": "CAPE_ML",
+          "unit": "J/kg"
+        },
+        {
+          "label": "CAPE (Most Unstable)",
+          "name": "CAPE_MU",
+          "unit": "J/kg"
+        },
+        {
+          "label": "Wolkenuntergrenze",
+          "name": "CEILING",
+          "unit": "m"
+        },
+        {
+          "label": "CIN (Mixed Layer)",
+          "name": "CIN_ML",
+          "unit": "J/kg"
+        },
+        {
+          "label": "CIN (Most Unstable)",
+          "name": "CIN_MU",
+          "unit": "J/kg"
+        },
+        {
+          "label": "Tiefe Bewölkung",
+          "name": "CLCL",
+          "unit": "%"
+        },
+        {
+          "label": "Mittelhohe Bewölkung",
+          "name": "CLCM",
+          "unit": "%"
+        },
+        {
+          "label": "Gesamtbewölkung",
+          "name": "CLCT",
+          "unit": "%"
+        },
+        {
+          "label": "Graupel (akkumuliert)",
+          "name": "GRAU_GSP",
+          "unit": "kg/m²"
+        },
+        {
+          "label": "Hagel (akkumuliert)",
+          "name": "HAIL_GSP",
+          "unit": "kg/m²"
+        },
+        {
+          "label": "Geländehöhe",
+          "name": "HSURF",
+          "unit": "m"
+        },
+        {
+          "label": "Blattflächenindex",
+          "name": "LAI",
+          "unit": "1"
+        },
+        {
+          "label": "Blitzpotenzial-Index (LPI)",
+          "name": "LPI",
+          "unit": "J/kg"
+        },
+        {
+          "label": "Max. Blitzpotenzial-Index",
+          "name": "LPI_MAX",
+          "unit": "J/kg"
+        },
+        {
+          "label": "Luftdruck (Meeresniveau)",
+          "name": "PMSL",
+          "unit": "Pa"
+        },
+        {
+          "label": "Regen (akkumuliert)",
+          "name": "RAIN_GSP",
+          "unit": "kg/m²"
+        },
+        {
+          "label": "Schneefall (akkumuliert)",
+          "name": "SNOW_GSP",
+          "unit": "kg/m²"
+        },
+        {
+          "label": "Taupunkt 2 m",
+          "name": "TD_2M",
+          "unit": "K"
+        },
+        {
+          "label": "Niederschlag (akkumuliert)",
+          "name": "TOT_PREC",
+          "unit": "kg/m²"
+        },
+        {
+          "label": "Temperatur 2 m",
+          "name": "T_2M",
+          "unit": "K"
+        },
+        {
+          "label": "Wind U-Komponente 10 m",
+          "name": "U_10M",
+          "unit": "m/s"
+        },
+        {
+          "label": "Windböen 10 m",
+          "name": "VMAX_10M",
+          "unit": "m/s"
+        },
+        {
+          "label": "Wind V-Komponente 10 m",
+          "name": "V_10M",
+          "unit": "m/s"
+        },
+        {
+          "label": "Signifikantes Wetter (WW)",
+          "name": "WW",
+          "unit": "1"
+        }
+      ],
+      "query_types": [
+        "area",
+        "cube",
+        "position",
+        "radius"
+      ],
+      "temporal": {
+        "end": "2026-10-10T11:00:00Z",
+        "start": "2026-10-09T08:00:00Z",
+        "steps": 28
+      },
+      "title": "ICON-D2-RUC"
+    },
+    {
+      "bbox": [
+        -4.161636,
+        43.044051,
+        20.544435,
+        58.16465
+      ],
+      "description": "Ensemble (20 Member) des ICON-D2 Rapid Update Cycle, stündlich neu gerechnet, Vorhersage bis +27 h. Punktwerte werden als Ensemble-Mittel dargestellt.",
+      "id": "ICON-D2-RUC-EPS@single_level",
+      "instances": [
+        "2026-10-09T08:00:00Z",
+        "2026-10-09T07:00:00Z",
+        "2026-10-09T06:00:00Z",
+        "2026-10-09T05:00:00Z",
+        "2026-10-09T04:00:00Z",
+        "2026-10-09T03:00:00Z",
+        "2026-10-09T02:00:00Z",
+        "2026-10-09T01:00:00Z",
+        "2026-10-09T00:00:00Z",
+        "2026-10-08T23:00:00Z",
+        "2026-10-08T22:00:00Z",
+        "2026-10-08T21:00:00Z",
+        "2026-10-08T20:00:00Z",
+        "2026-10-08T19:00:00Z",
+        "2026-10-08T18:00:00Z",
+        "2026-10-08T17:00:00Z",
+        "2026-10-08T16:00:00Z",
+        "2026-10-08T15:00:00Z",
+        "2026-10-08T14:00:00Z",
+        "2026-10-08T13:00:00Z",
+        "2026-10-08T12:00:00Z",
+        "2026-10-08T11:00:00Z",
+        "2026-10-08T10:00:00Z",
+        "2026-10-08T09:00:00Z"
+      ],
+      "latest_instance": "2026-10-09T08:00:00Z",
+      "parameters": [
+        {
+          "label": "Diffuse Sonneneinstrahlung",
+          "name": "ASWDIFD_S",
+          "unit": "W/m²"
+        },
+        {
+          "label": "Direkte Sonneneinstrahlung",
+          "name": "ASWDIR_S",
+          "unit": "W/m²"
+        },
+        {
+          "label": "CAPE (Mixed Layer)",
+          "name": "CAPE_ML",
+          "unit": "J/kg"
+        },
+        {
+          "label": "CAPE (Most Unstable)",
+          "name": "CAPE_MU",
+          "unit": "J/kg"
+        },
+        {
+          "label": "Wolkenuntergrenze",
+          "name": "CEILING",
+          "unit": "m"
+        },
+        {
+          "label": "CIN (Mixed Layer)",
+          "name": "CIN_ML",
+          "unit": "J/kg"
+        },
+        {
+          "label": "CIN (Most Unstable)",
+          "name": "CIN_MU",
+          "unit": "J/kg"
+        },
+        {
+          "label": "Tiefe Bewölkung",
+          "name": "CLCL",
+          "unit": "%"
+        },
+        {
+          "label": "Mittelhohe Bewölkung",
+          "name": "CLCM",
+          "unit": "%"
+        },
+        {
+          "label": "Gesamtbewölkung",
+          "name": "CLCT",
+          "unit": "%"
+        },
+        {
+          "label": "Graupel (akkumuliert)",
+          "name": "GRAU_GSP",
+          "unit": "kg/m²"
+        },
+        {
+          "label": "Hagel (akkumuliert)",
+          "name": "HAIL_GSP",
+          "unit": "kg/m²"
+        },
+        {
+          "label": "Geländehöhe",
+          "name": "HSURF",
+          "unit": "m"
+        },
+        {
+          "label": "Blattflächenindex",
+          "name": "LAI",
+          "unit": "1"
+        },
+        {
+          "label": "Blitzpotenzial-Index (LPI)",
+          "name": "LPI",
+          "unit": "J/kg"
+        },
+        {
+          "label": "Max. Blitzpotenzial-Index",
+          "name": "LPI_MAX",
+          "unit": "J/kg"
+        },
+        {
+          "label": "Luftdruck (Meeresniveau)",
+          "name": "PMSL",
+          "unit": "Pa"
+        },
+        {
+          "label": "Regen (akkumuliert)",
+          "name": "RAIN_GSP",
+          "unit": "kg/m²"
+        },
+        {
+          "label": "Schneefall (akkumuliert)",
+          "name": "SNOW_GSP",
+          "unit": "kg/m²"
+        },
+        {
+          "label": "Taupunkt 2 m",
+          "name": "TD_2M",
+          "unit": "K"
+        },
+        {
+          "label": "Niederschlag (akkumuliert)",
+          "name": "TOT_PREC",
+          "unit": "kg/m²"
+        },
+        {
+          "label": "Temperatur 2 m",
+          "name": "T_2M",
+          "unit": "K"
+        },
+        {
+          "label": "Wind U-Komponente 10 m",
+          "name": "U_10M",
+          "unit": "m/s"
+        },
+        {
+          "label": "Windböen 10 m",
+          "name": "VMAX_10M",
+          "unit": "m/s"
+        },
+        {
+          "label": "Wind V-Komponente 10 m",
+          "name": "V_10M",
+          "unit": "m/s"
+        }
+      ],
+      "query_types": [
+        "area",
+        "cube",
+        "position",
+        "radius"
+      ],
+      "temporal": {
+        "end": "2026-10-10T11:00:00Z",
+        "start": "2026-10-09T08:00:00Z",
+        "steps": 28
+      },
+      "title": "ICON-D2-RUC-EPS"
+    }
+  ],
+  "generated_at": "2026-10-09T09:26:07Z",
+  "location": null,
+  "model": null,
+  "source": "Deutscher Wetterdienst · Open Data (EDR API)",
+  "widget": "model-runs"
+}
