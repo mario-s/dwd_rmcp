@@ -265,7 +265,7 @@ impl DwdMcpServer {
             async move {
                 let parts = join_all(groups.iter().map(|g| {
                     self.client
-                        .get_position_raw(collection, &coords, Some(&inst), Some(g), None, None, "CoverageJSON")
+                        .get_position_raw(collection, &coords, &inst, Some(g), None, None, "CoverageJSON")
                 }))
                 .await;
                 let mut series = Series::default();

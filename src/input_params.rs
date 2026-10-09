@@ -1,19 +1,19 @@
 use rmcp::schemars::JsonSchema;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 // -----------------------------------------------------------------------------
 // Tool parameter types
 // -----------------------------------------------------------------------------
 
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct CollectionParams {
     #[schemars(
         description = "Collection ID, e.g. ICON-D2-RUC@single_level"
     )]
-    pub collection_id: Option<String>,
+    pub collection_id: String,
 }
 
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct PointForecastParams {
     #[schemars(description = "Latitude in degrees")]
     pub latitude: f64,
@@ -24,7 +24,7 @@ pub struct PointForecastParams {
     #[schemars(
         description = "Model collection name, e.g. ICON-D2-RUC@single_level"
     )]
-    pub collection_id: Option<String>,
+    pub collection_id: String,
 
     #[schemars(
         description = "Specific model run instance ID. If omitted, the latest run is used."
@@ -42,7 +42,7 @@ pub struct PointForecastParams {
     pub datetime_range: Option<String>,
 }
 
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct PositionParams {
     #[schemars(
         description = "WKT Point, e.g. POINT(13.405 52.520)"
@@ -52,12 +52,12 @@ pub struct PositionParams {
     #[schemars(
         description = "Collection ID, e.g. ICON-D2-RUC@single_level"
     )]
-    pub collection_id: Option<String>,
+    pub collection_id: String,
 
     #[schemars(
         description = "Specific model run instance ID"
     )]
-    pub instance_id: Option<String>,
+    pub instance_id: String,
 
     #[schemars(
         description = "Comma-separated parameter names, e.g. T_2M,TOT_PREC"
@@ -80,7 +80,7 @@ pub struct PositionParams {
     pub output_format: Option<String>,
 }
 
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct RadiusParams {
     #[schemars(
         description = "Center point as WKT, e.g. POINT(13.405 52.520)"
@@ -128,7 +128,7 @@ pub struct RadiusParams {
     pub output_format: Option<String>,
 }
 
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct AreaParams {
     #[schemars(
         description = "WKT Polygon, e.g. POLYGON((13.3 52.4, 13.5 52.4, 13.5 52.6, 13.3 52.6, 13.3 52.4))"
@@ -166,7 +166,7 @@ pub struct AreaParams {
     pub output_format: Option<String>,
 }
 
-#[derive(Debug, Deserialize, JsonSchema)]
+#[derive(Debug, Deserialize, Serialize, JsonSchema)]
 pub struct CubeParams {
     #[schemars(
         description = "Bounding box minx,miny,maxx,maxy, e.g. 13.3,52.4,13.5,52.6"

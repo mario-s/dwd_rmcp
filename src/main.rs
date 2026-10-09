@@ -168,12 +168,7 @@ impl DwdMcpServer {
         &self,
         Parameters(params): Parameters<CollectionParams>,
     ) -> Result<String, String> {
-        let collection_id = params
-            .collection_id
-            .as_deref()
-            .unwrap_or(DEFAULT_COLLECTION);
-
-        let response = self.client.get_collection(collection_id);
+        let response = self.client.get_collection(&params.collection_id);
         as_json(response.await)
     }
 
@@ -189,12 +184,7 @@ impl DwdMcpServer {
         &self,
         Parameters(params): Parameters<CollectionParams>,
     ) -> Result<String, String> {
-        let collection_id = params
-            .collection_id
-            .as_deref()
-            .unwrap_or(DEFAULT_COLLECTION);
-
-        let response = self.client.list_instances(collection_id);
+        let response = self.client.list_instances(&params.collection_id);
         as_json(response.await)
     }
 
@@ -210,10 +200,7 @@ impl DwdMcpServer {
         &self,
         Parameters(params): Parameters<PointForecastParams>,
     ) -> Result<String, String> {
-        let collection_id = params
-            .collection_id
-            .as_deref()
-            .unwrap_or(DEFAULT_COLLECTION);
+        let collection_id = &params.collection_id;
 
         let response = self
             .client
@@ -240,11 +227,7 @@ impl DwdMcpServer {
         &self,
         Parameters(params): Parameters<PositionParams>,
     ) -> Result<String, String> {
-        let collection_id = params
-            .collection_id
-            .as_deref()
-            .unwrap_or(DEFAULT_COLLECTION);
-
+        let collection_id = &params.collection_id;
         let output_format = params
             .output_format
             .as_deref()
@@ -255,7 +238,7 @@ impl DwdMcpServer {
             .get_position_raw(
                 collection_id,
                 &params.coords,
-                params.instance_id.as_deref(),
+                &params.instance_id,
                 params.parameter_names.as_deref(),
                 params.datetime_val.as_deref(),
                 params.crs.as_deref(),

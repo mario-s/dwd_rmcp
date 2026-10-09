@@ -147,8 +147,8 @@ Ask in German or English. Claude finds the coordinates itself. The server's inst
 
 ## Tools
 
-All tools are read-only. Optional arguments are marked with `?`. Unless stated otherwise, `collection_id?` defaults
-to `ICON-D2-RUC@single_level`.
+All tools are read-only. Optional arguments are marked with `?`. Where `collection_id` is optional, it defaults to
+`ICON-D2-RUC@single_level`.
 
 ### Data tools
 
@@ -159,17 +159,18 @@ These return the DWD response as compact JSON text, either parsed or close to ho
 | `get_dwd_api_info` | none | Landing page and links | `GET /` |
 | `get_conformance` | none | Supported conformance classes | `GET /conformance` |
 | `list_model_collections` | none | Available collections, e.g. `ICON-D2-RUC@single_level` | `GET /collections` |
-| `describe_model_collection` | `collection_id?` | Metadata, parameter names, query types | `GET /collections/{id}` |
-| `list_model_run_instances` | `collection_id?` | Model runs (instances) | `GET /collections/{id}/instances` |
-| `get_point_weather_forecast` | `latitude`, `longitude`, `collection_id?`, `instance_id?`, `parameters?` (list), `datetime_range?` | Parsed hourly series; temperatures also in °C | `position` |
-| `query_edr_position` | `coords` (WKT `POINT`), `parameter_names?`, `datetime_val?`, `instance_id?`, `crs?`, `output_format?`, `collection_id?` | Raw CoverageJSON | `position` |
-| `query_edr_radius` | `coords`, `within`, `within_units?` (default `km`), plus the `position` options | Raw CoverageJSON | `radius` |
-| `query_edr_area` | `coords` (WKT `POLYGON`), plus the `position` options | Raw CoverageJSON | `area` |
-| `query_edr_cube` | `bbox` (`minx,miny,maxx,maxy`), plus the `position` options | Raw CoverageJSON | `cube` |
+| `describe_model_collection` | `collection_id` | Metadata, parameter names, query types | `GET /collections/{id}` |
+| `list_model_run_instances` | `collection_id` | Model runs (instances) | `GET /collections/{id}/instances` |
+| `get_point_weather_forecast` | `latitude`, `longitude`, `collection_id`, `instance_id?`, `parameters?` (list), `datetime_range?` | Parsed hourly series; temperatures also in °C | `position` |
+| `query_edr_position` | `coords` (WKT `POINT`), `collection_id`, `instance_id`, `parameter_names?`, `datetime_val?`, `crs?`, `output_format?` | Raw CoverageJSON | `position` |
+| `query_edr_radius` | `coords`, `within`, `within_units?` (default `km`), `collection_id?`, `instance_id?`, `parameter_names?`, `datetime_val?`, `crs?`, `output_format?` | Raw CoverageJSON | `radius` |
+| `query_edr_area` | `coords` (WKT `POLYGON`), plus the same options as `query_edr_radius` | Raw CoverageJSON | `area` |
+| `query_edr_cube` | `bbox` (`minx,miny,maxx,maxy`), plus the same options as `query_edr_radius` | Raw CoverageJSON | `cube` |
 
 `get_point_weather_forecast` uses the newest run that has data unless `instance_id` is given. Its default
-parameters are `T_2M`, `TOT_PREC`, `U_10M`, `V_10M`, `CLCT`, `PMSL` and `WW`. Without an `instance_id`, the raw
-`query_edr_*` tools call the collection-level endpoint and leave the choice of run to the API.
+parameters are `T_2M`, `TOT_PREC`, `U_10M`, `V_10M`, `CLCT`, `PMSL` and `WW`. `query_edr_position` always queries
+one specific run; use `list_model_run_instances` to find its id. Without an `instance_id`, the radius, area and cube
+tools call the collection-level endpoint and leave the choice of run to the API.
 
 ### Widget tools
 
