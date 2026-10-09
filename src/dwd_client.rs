@@ -126,22 +126,15 @@ impl DwdEdrClient {
         &self,
         collection_id: &str,
         coords: &str,
-        instance_id: Option<&str>,
+        instance_id: &str,
         parameter_names: Option<&str>,
         datetime: Option<&str>,
         crs: Option<&str>,
         output_format: &str,
     ) -> anyhow::Result<Value> {
-        let path = match instance_id {
-            Some(instance) => format!(
+        let path = format!(
                 "/collections/{}/instances/{}/position",
-                collection_id, instance
-            ),
-            None => format!(
-                "/collections/{}/position",
-                collection_id
-            ),
-        };
+                collection_id, instance_id);
 
         let params = optional_params(vec![
             ("coords", Some(coords.to_string())),
@@ -300,7 +293,7 @@ impl DwdEdrClient {
             .get_position_raw(
                 collection_id,
                 &coords,
-                Some(&instance_id),
+                &instance_id,
                 Some(&param_str),
                 datetime_range,
                 None,
