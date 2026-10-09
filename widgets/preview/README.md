@@ -18,6 +18,10 @@ JSON-RPC protocol.
 A `tools/call` from a widget returns the matching fixture. With an `args.parameter`, it looks for
 `fixtures/<widget>.<PARAM>.json` first, for example `area-map.TOT_PREC.json`.
 
+The `area-map*.json` and `compare.json` fixtures are too large to commit and are git-ignored. Create them
+once with `node widgets/preview/capture.mjs --live --update-fixtures --only area-map,area-map-precip,compare`.
+Until then, those scenarios show as unavailable.
+
 **Live** (`--live`). Spawns `target/release/dwd-mcp-server` and runs `initialize`, `tools/list` and
 `resources/list`, then `resources/read` on every `ui://dwd/*` resource. It resolves each scenario's widget
 through the tool's `_meta.ui.resourceUri`, which is how Claude does it, and runs the real `tools/call`.
