@@ -4,7 +4,7 @@ A Rust [MCP](https://modelcontextprotocol.io) server that gives Claude and other
 model data from the Deutscher Wetterdienst (DWD). It talks to the DWD
 [Environmental Data Retrieval (EDR) API](https://nwp.opendata-api.dwd.de/v1beta1/docs) and needs no API key.
 
-Its default data source is the **ICON-D2-RUC** model. It has a resolution of about 2.2 km, a new run every hour and
+It requires a collection model. For instance the **ICON-D2-RUC** model. This has a resolution of about 2.2 km, a new run every hour and
 forecasts up to about +27 h, covering Germany and its neighbours.
 
 The server offers 17 tools in two groups:
