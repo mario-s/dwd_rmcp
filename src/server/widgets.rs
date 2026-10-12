@@ -13,8 +13,8 @@ pub const MIME_TYPE: &str = "text/html;profile=mcp-app";
 /// Marker in each widget `<head>` that is replaced by the shared assets.
 pub const SHARED_MARKER: &str = "<!--DWD:SHARED-->";
 
-const THEME_CSS: &str = include_str!("../widgets/shared/theme.css");
-const BRIDGE_JS: &str = include_str!("../widgets/shared/bridge.js");
+const THEME_CSS: &str = include_str!("../../widgets/shared/theme.css");
+const BRIDGE_JS: &str = include_str!("../../widgets/shared/bridge.js");
 
 pub struct Widget {
     pub name: &'static str,
@@ -40,43 +40,43 @@ pub const WIDGETS: &[Widget] = &[
         name: "current",
         title: "DWD · Aktuelles Wetter",
         description: "Aktuelle Bedingungen und die nächsten Stunden für einen Ort (ICON-D2-RUC).",
-        html: include_str!("../widgets/current.html"),
+        html: include_str!("../../widgets/current.html"),
     },
     Widget {
         name: "forecast",
         title: "DWD · Vorhersage",
         description: "Meteogramm: Temperatur, Taupunkt, Niederschlag, Wolken, Wind und Druck stündlich.",
-        html: include_str!("../widgets/forecast.html"),
+        html: include_str!("../../widgets/forecast.html"),
     },
     Widget {
         name: "wind",
         title: "DWD · Wind",
         description: "Windgeschwindigkeit, Böen und Windrichtung im Verlauf mit vorherrschender Richtung.",
-        html: include_str!("../widgets/wind.html"),
+        html: include_str!("../../widgets/wind.html"),
     },
     Widget {
         name: "storm",
         title: "DWD · Gewitterrisiko",
         description: "Konvektions-/Gewitterausblick aus CAPE, Blitzpotenzial (LPI), Hagel, Böen und Wettercode.",
-        html: include_str!("../widgets/storm.html"),
+        html: include_str!("../../widgets/storm.html"),
     },
     Widget {
         name: "compare",
         title: "DWD · Ortsvergleich",
         description: "Vergleich der Vorhersage für 2–6 Orte nebeneinander.",
-        html: include_str!("../widgets/compare.html"),
+        html: include_str!("../../widgets/compare.html"),
     },
     Widget {
         name: "area-map",
         title: "DWD · Gebietskarte",
         description: "Gitterfeld (Temperatur, Niederschlag, Wolken, Böen, CAPE) über einer Region mit Zeitschieber.",
-        html: include_str!("../widgets/area-map.html"),
+        html: include_str!("../../widgets/area-map.html"),
     },
     Widget {
         name: "model-runs",
         title: "DWD · Modellläufe",
         description: "Datenquellen-Explorer: Kollektionen, Parameter und verfügbare Modellläufe der DWD EDR API.",
-        html: include_str!("../widgets/model-runs.html"),
+        html: include_str!("../../widgets/model-runs.html"),
     },
 ];
 

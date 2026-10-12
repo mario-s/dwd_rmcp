@@ -1,7 +1,6 @@
 //! `show_*` tools: each returns a `CallToolResult` whose `structuredContent`
 //! is rendered by the matching `ui://dwd/<name>.html` widget (MCP Apps).
 //! Payload shapes: `widgets/CONTRACT.md`.
-
 use std::future::Future;
 
 use chrono::{DateTime, Datelike, Duration, TimeZone, Utc, Weekday};
@@ -15,10 +14,11 @@ use rmcp::{
 use serde::Deserialize;
 use serde_json::{Map, Value, json};
 
-use crate::DwdMcpServer;
-use crate::client::{DEFAULT_COLLECTION, HttpError, is_client_error};
-use crate::shaping::{self, BBox, Coverage, Series, Step};
-use crate::widgets;
+use crate::client::dwd_rest::{DEFAULT_COLLECTION, HttpError, is_client_error};
+
+use super::dwd_mcp::DwdMcpServer;
+use super::shaping::{BBox, Coverage, Series, Step};
+use super::*;
 
 // -----------------------------------------------------------------------------
 // Parameters
